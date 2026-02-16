@@ -1,0 +1,22 @@
+# Build folders
+bin/
+obj/
+
+# User files
+*.user
+*.suo
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+
+# Secrets and local config
+appsettings.Development.json
+
+# Docker
+*.log
+
+# EF Migrations (opcional si quieres ignorarlas)
+Migrations/
