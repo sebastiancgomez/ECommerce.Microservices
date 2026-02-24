@@ -29,4 +29,8 @@ public class ProductServiceClient
             Quantity = 0
         }).ToList();
     }
+    public async Task<ProductDto?> GetProductById(int productId)
+    {
+        return await _http.GetFromJsonAsync<ProductDto>($"/api/Product/{productId}");
+    }
 }

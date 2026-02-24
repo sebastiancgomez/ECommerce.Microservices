@@ -13,7 +13,7 @@ public class OrderDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<OrderItem>()
-            .Property(oi => oi.ProductPrice)
+            .Property(oi => oi.UnitPrice)
             .HasColumnType("decimal(18,2)"); // Ajusta precisión y escala según necesites
     }
 }

@@ -2,7 +2,7 @@
 
 public class CreateOrderDto
 {
-    public List<ProductDto> Products { get; set; } = new();
+    public List<CreateOrderItemDto> Items { get; set; } = new();
 }
 
 
