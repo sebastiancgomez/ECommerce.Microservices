@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Models;
-using OrderService.Services;
+using OrderService.Clients;
 
 namespace OrderService.Controllers;
 
@@ -10,15 +11,15 @@ namespace OrderService.Controllers;
 [Route("api/[controller]")]
 public class OrderController : ControllerBase
 {
-    private readonly ProductServiceClient _productClient;
+    private readonly ProductClient _productClient;
     private readonly OrderDbContext _db;
-    private readonly InventoryServiceClient _inventory;
-    private readonly PricingServiceClient _pricing;
+    private readonly InventoryClient _inventory;
+    private readonly PricingClient _pricing;
 
     public OrderController( OrderDbContext db, 
-        InventoryServiceClient inventory,
-        PricingServiceClient pricing,
-        ProductServiceClient productClient)
+        InventoryClient inventory,
+        PricingClient pricing,
+        ProductClient productClient)
     {
         _db = db;
         _inventory = inventory;
@@ -39,32 +40,48 @@ public class OrderController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateOrderDto dto)
     {
         if (dto.Items == null || !dto.Items.Any())
-            return BadRequest("No products provided.");
+            return BadRequest("Order must contain at least one item.");
 
         var order = new Order();
 
         foreach (var itemDto in dto.Items)
         {
-            // Validar stock en InventoryService
-            var available = await _inventory.IsAvailable(itemDto.ProductId, itemDto.Quantity);
-            if (!available)
-                return BadRequest($"Product {itemDto.ProductId} does not have enough stock.");
+            // 1️ Obtener información de pricing
+            var product = await _productClient.GetProductById(itemDto.ProductId);
+           
 
-            // Obtener precio final desde PricingService
-            var pricingInfo = await _pricing.GetPriceAsync(itemDto.ProductId);
-            if (pricingInfo == null)
+            if (product == null)
                 return BadRequest($"Cannot get pricing for product {itemDto.ProductId}");
+            var pricingInfo = await _pricing.GetPrice(itemDto.ProductId);
+            // 2️ Verificar disponibilidad
+            var available = await _inventory.IsAvailable(
+                itemDto.ProductId,
+                itemDto.Quantity);
 
-            order.AddItem(itemDto.ProductId, pricingInfo.Name, pricingInfo.FinalPrice, itemDto.Quantity);
+            if (!available)
+                return BadRequest($"Not enough stock for product {itemDto.ProductId}");
+
+            // 3️ Reservar stock
+            await _inventory.Reserve(itemDto.ProductId, itemDto.Quantity);
+
+            // 4️ Agregar item a la orden
+            order.AddItem(
+                itemDto.ProductId,
+                product.Name,
+                pricingInfo,
+                itemDto.Quantity);
         }
 
-        // Confirmar orden (stock y precio verificados)
+        // 5️ Cambiar estado
         order.ChangeStatus(OrderStatus.Confirmed);
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+        return CreatedAtAction(
+            nameof(GetOrderById),
+            new { id = order.Id },
+            order);
     }
 
     // GET /api/Order/{id}

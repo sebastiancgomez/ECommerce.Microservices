@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OrderService.Clients;
 using OrderService.Data;
-using OrderService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,9 +10,19 @@ var connectionString = builder.Configuration.GetConnectionString("OrderDb");
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddHttpClient<ProductServiceClient>(client =>
+builder.Services.AddHttpClient<ProductClient>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5100"); // URL de ProductService HTTP
+    client.BaseAddress = new Uri("http://localhost:5100/");
+});
+
+builder.Services.AddHttpClient<InventoryClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5600/");
+});
+
+builder.Services.AddHttpClient<PricingClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5700/");
 });
 
 // Resto de configuración...
