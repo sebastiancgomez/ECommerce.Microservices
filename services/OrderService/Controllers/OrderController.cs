@@ -12,11 +12,18 @@ public class OrderController : ControllerBase
 {
     private readonly ProductServiceClient _productClient;
     private readonly OrderDbContext _db;
+    private readonly InventoryServiceClient _inventory;
+    private readonly PricingServiceClient _pricing;
 
-    public OrderController(ProductServiceClient productClient, OrderDbContext db)
+    public OrderController( OrderDbContext db, 
+        InventoryServiceClient inventory,
+        PricingServiceClient pricing,
+        ProductServiceClient productClient)
     {
-        _productClient = productClient;
         _db = db;
+        _inventory = inventory;
+        _pricing = pricing;
+        _productClient = productClient;
     }
 
     // GET /api/Order/products (ya lo tienes)
@@ -29,23 +36,30 @@ public class OrderController : ControllerBase
 
     // POST /api/Order
     [HttpPost]
-    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateOrderDto dto)
     {
-        if (dto.Products == null || !dto.Products.Any())
+        if (dto.Items == null || !dto.Items.Any())
             return BadRequest("No products provided.");
 
         var order = new Order();
 
-        foreach (var p in dto.Products)
+        foreach (var itemDto in dto.Items)
         {
-            order.Items.Add(new OrderItem
-            {
-                ProductId = p.Id,
-                ProductName = p.Name,
-                ProductPrice = p.Price,
-                Quantity = p.Quantity
-            });
+            // Validar stock en InventoryService
+            var available = await _inventory.IsAvailable(itemDto.ProductId, itemDto.Quantity);
+            if (!available)
+                return BadRequest($"Product {itemDto.ProductId} does not have enough stock.");
+
+            // Obtener precio final desde PricingService
+            var pricingInfo = await _pricing.GetPriceAsync(itemDto.ProductId);
+            if (pricingInfo == null)
+                return BadRequest($"Cannot get pricing for product {itemDto.ProductId}");
+
+            order.AddItem(itemDto.ProductId, pricingInfo.Name, pricingInfo.FinalPrice, itemDto.Quantity);
         }
+
+        // Confirmar orden (stock y precio verificados)
+        order.ChangeStatus(OrderStatus.Confirmed);
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
@@ -59,6 +73,7 @@ public class OrderController : ControllerBase
     {
         var order = await _db.Orders
             .Include(o => o.Items)
+            .Include(o => o.StatusHistory)
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (order == null) return NotFound();
