@@ -2,12 +2,33 @@
 
 public class OrderItem
 {
-    public int Id { get; set; }
+    public int Id { get; private set; }
 
-    // Producto relacionado (solo datos necesarios, desde ProductService)
-    public int ProductId { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-    public decimal ProductPrice { get; set; }
+    public int OrderId { get; private set; }
+    public Order Order { get; private set; } = null!; // EF Core lo inicializa
 
-    public int Quantity { get; set; }
+    public int ProductId { get; private set; }
+    public string ProductName { get; private set; } = null!; // EF Core lo inicializa
+    public decimal UnitPrice { get; private set; }
+    public int Quantity { get; private set; }
+
+    public decimal TotalPrice => UnitPrice * Quantity;
+
+    // Constructor público para crear nuevos OrderItems
+    public OrderItem(int productId, string productName, decimal unitPrice, int quantity)
+    {
+        ProductId = productId;
+        ProductName = productName;
+        UnitPrice = unitPrice;
+        Quantity = quantity;
+    }
+
+    public void IncreaseQuantity(int quantity)
+    {
+        Quantity += quantity;
+    }
+
+    // Constructor vacío requerido por EF Core
+    private OrderItem() { }
+
 }
