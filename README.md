@@ -62,23 +62,29 @@ Each microservice has:
 
 Services communicate through **HTTP APIs**.
 
-High level architecture:
+---
 
-```
-Client
-   ↓
-API Gateway (planned)
-   ↓
-┌───────────────┬───────────────┬───────────────┐
-│               │               │
-Product       Order         Customer
-Service       Service       Service
-                 │
-                 │
-          ┌───────────────┐
-          │               │
-      Inventory        Pricing
-       Service         Service
+# 📊 Architecture Diagram
+
+```mermaid
+flowchart LR
+
+Client --> APIGateway
+
+APIGateway --> ProductService
+APIGateway --> OrderService
+APIGateway --> CustomerService
+
+OrderService --> ProductService
+OrderService --> PricingService
+OrderService --> InventoryService
+
+InventoryService --> InventoryDB[(InventoryDB)]
+PricingService --> PricingDB[(PricingDB)]
+ProductService --> ProductDB[(ProductDB)]
+OrderService --> OrderDB[(OrderDB)]
+CustomerService --> CustomerDB[(CustomerDB)]
+NotificationService --> NotificationDB[(NotificationDB)]
 ```
 
 ---
@@ -105,17 +111,11 @@ Each service is designed to evolve **independently**.
 ```
 services
  ├─ ProductService
- │
  ├─ OrderService
- │
  ├─ CustomerService
- │
  ├─ NotificationService
- │
  ├─ InventoryService
- │
  ├─ PricingService
- │
  └─ PaymentService (planned)
 
 docker
@@ -193,23 +193,96 @@ http://localhost:<port>/swagger
 
 ---
 
-# 📦 Example Flow: Create Order
+# 🔄 Order Creation Sequence
 
-Order creation coordinates multiple services.
+This sequence diagram illustrates how services collaborate during the order creation process.
+
+```mermaid
+sequenceDiagram
+
+Client->>OrderService: POST /orders
+
+OrderService->>ProductService: Get product information
+ProductService-->>OrderService: Product details
+
+OrderService->>PricingService: Calculate price
+PricingService-->>OrderService: Final price
+
+OrderService->>InventoryService: Validate stock
+InventoryService-->>OrderService: Stock available
+
+OrderService->>InventoryService: Reserve stock
+InventoryService-->>OrderService: Reservation confirmed
+
+OrderService->>OrderDB: Persist order
+
+OrderService-->>Client: Order Created
+```
+
+---
+
+# 📡 Service Communication Contracts
+
+Inter-service communication is based on **REST APIs with DTO contracts**.
+
+### Product Service
 
 ```
-Client
-   ↓
-OrderService
-   ↓
-ProductService → retrieve product information
-PricingService → calculate final price
-InventoryService → validate stock
-InventoryService → reserve stock
-   ↓
-Order persisted
-   ↓
-Order status → Confirmed
+GET /products/{id}
+```
+
+Response example:
+
+```json
+{
+  "id": 10,
+  "name": "Laptop",
+  "price": 1200.00
+}
+```
+
+---
+
+### Pricing Service
+
+```
+GET /pricing/product/{productId}
+```
+
+Response example:
+
+```json
+{
+  "productId": 10,
+  "basePrice": 1200.00,
+  "finalPrice": 1150.00
+}
+```
+
+---
+
+### Inventory Service
+
+```
+POST /inventory/reserve
+```
+
+Request example:
+
+```json
+{
+  "productId": 10,
+  "quantity": 2
+}
+```
+
+Response example:
+
+```json
+{
+  "reservationId": "abc123",
+  "status": "Reserved"
+}
 ```
 
 ---
