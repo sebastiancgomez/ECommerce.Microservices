@@ -1,17 +1,57 @@
-```markdown
-# ECommerce Microservices (.NET)
+# 🛒 ECommerce Microservices (.NET)
 
-A microservices-based backend architecture for an e-commerce platform built with **.NET 8**, **ASP.NET Core**, **Entity Framework Core**, **Docker**, and **SQL Server**.
+Backend architecture for an **e-commerce platform built with .NET 8** using a **microservices-based design**.
 
-This project was created as part of a **backend architecture practice**, focusing on **microservices design, service communication, and scalable system structure**.
+This project demonstrates modern backend architecture practices including:
 
-The system models a simplified e-commerce flow where customers can place orders, inventory is validated, pricing rules are applied, and services communicate to complete the order lifecycle.
+- Microservices architecture
+- Domain modeling
+- Service-to-service communication
+- Independent databases per service
+- Clean domain entities
+- Dockerized infrastructure
+- REST APIs with ASP.NET Core
+- Scalable distributed system design
+
+The system models a simplified e-commerce flow where customers can place orders, inventory is validated, pricing rules are applied, and services collaborate to complete the order lifecycle.
 
 ---
 
-# Architecture Overview
+# 🚀 Tech Stack
 
-The platform is composed of multiple independent services, each responsible for a specific business capability.
+### Backend
+
+- .NET 8
+- ASP.NET Core Web API
+- Entity Framework Core
+- C#
+
+### API
+
+- REST
+- OpenAPI / Swagger
+
+### Database
+
+- SQL Server
+- EF Core Migrations
+
+### Infrastructure
+
+- Docker
+- Docker Compose (planned)
+
+### Architecture
+
+- Microservices
+- Domain modeling
+- Service clients (HTTP communication)
+
+---
+
+# 🏗 System Architecture
+
+The platform is composed of **multiple independent microservices**, each responsible for a specific business capability.
 
 Each microservice has:
 
@@ -20,208 +60,234 @@ Each microservice has:
 - Independent **deployment**
 - A clear **bounded context**
 
-Services communicate using **HTTP APIs**.
+Services communicate through **HTTP APIs**.
 
-Architecture (simplified):
+High level architecture:
 
-Client  
-│  
-▼  
-API Gateway (planned)  
-│  
-├───────────────┬───────────────┬───────────────  
-│               │               │  
-Product       Order         Customer  
-Service       Service       Service  
-                 │  
-                 │  
-           ┌───────────────┐  
-           │               │  
-       Inventory        Pricing  
-        Service         Service  
+```
+Client
+   ↓
+API Gateway (planned)
+   ↓
+┌───────────────┬───────────────┬───────────────┐
+│               │               │
+Product       Order         Customer
+Service       Service       Service
+                 │
+                 │
+          ┌───────────────┐
+          │               │
+      Inventory        Pricing
+       Service         Service
+```
 
 ---
 
-# Microservices
+# ☁️ Microservices
 
 | Service | Responsibility |
 |------|------|
-| **ProductService** | Product catalog management |
-| **OrderService** | Order creation and lifecycle |
-| **CustomerService** | Customer management |
-| **NotificationService** | Notifications and messaging |
-| **InventoryService** | Product stock management and reservations |
-| **PricingService** | Product pricing rules and price calculation |
-| **PaymentService** | Payment processing *(planned)* |
-| **API Gateway** | Single entry point for clients *(planned)* |
+ProductService | Product catalog management |
+OrderService | Order creation and lifecycle |
+CustomerService | Customer management |
+NotificationService | Notifications and messaging |
+InventoryService | Product stock validation and reservation |
+PricingService | Pricing rules and price calculation |
+PaymentService | Payment processing *(planned)* |
+API Gateway | Single entry point for clients *(planned)* |
+
+Each service is designed to evolve **independently**.
 
 ---
 
-# Technology Stack
+# 📦 Project Structure
 
-- **.NET 8**
-- **ASP.NET Core Web API**
-- **Entity Framework Core**
-- **SQL Server**
-- **Docker**
-- **Swagger / OpenAPI**
+```
+services
+ ├─ ProductService
+ │
+ ├─ OrderService
+ │
+ ├─ CustomerService
+ │
+ ├─ NotificationService
+ │
+ ├─ InventoryService
+ │
+ ├─ PricingService
+ │
+ └─ PaymentService (planned)
 
-Architecture practices included:
+docker
+ └─ sqlserver
+```
 
-- Domain modeling
-- Microservices separation
-- Independent databases
-- Service-to-service communication
-- DTO-based APIs
-- Containerized infrastructure
+Typical structure inside each service:
 
----
-
-# Project Structure
-
-services/
-
-- ProductService/
-- OrderService/
-- CustomerService/
-- NotificationService/
-- InventoryService/
-- PricingService/
-- PaymentService (planned)
-
-docker/
-
-- sqlserver/
-
-Each service follows a typical layered structure:
-
-- Controllers
-- Models
-- DTOs
-- Data
-- Services / Clients
-- Migrations
+```
+Controllers
+Models
+DTOs
+Data
+Clients
+Migrations
+```
 
 ---
 
-# Service Ports
+# 🔌 Service Ports
 
 | Service | HTTP | HTTPS | Database |
 |------|------|------|------|
-| ProductService | 5100 | 7100 | ProductDb |
-| OrderService | 5200 | 7200 | OrderDb |
-| CustomerService | 5300 | 7300 | CustomerDb |
-| NotificationService | 5400 | 7400 | NotificationDb |
-| PaymentService | 5500 | 7500 | PaymentDb |
-| InventoryService | 5600 | 7600 | InventoryDb |
-| PricingService | 5700 | 7700 | PricingDb |
-| API Gateway (planned) | 5000 | 7000 | — |
+ProductService | 5100 | 7100 | ProductDb |
+OrderService | 5200 | 7200 | OrderDb |
+CustomerService | 5300 | 7300 | CustomerDb |
+NotificationService | 5400 | 7400 | NotificationDb |
+PaymentService | 5500 | 7500 | PaymentDb |
+InventoryService | 5600 | 7600 | InventoryDb |
+PricingService | 5700 | 7700 | PricingDb |
+API Gateway | 5000 | 7000 | — |
 
-All services use **SQL Server (1433)** running in Docker.
+All services use **SQL Server running in Docker (port 1433)**.
 
 ---
 
-# Running the Project
+# 🐳 Running the Project
 
 ## 1. Start SQL Server with Docker
 
-Example:
-
+```
 docker run -e "ACCEPT_EULA=Y" \
 -e "SA_PASSWORD=YourPassword123!" \
 -p 1433:1433 \
 --name ecommerce-sql \
 -d mcr.microsoft.com/mssql/server:2022-latest
+```
 
 ---
 
-## 2. Run Migrations
+## 2. Run database migrations
 
 Inside each service:
 
+```
 dotnet ef database update
+```
 
 ---
 
-## 3. Run Services
+## 3. Run a service
 
 Example:
 
-cd ProductService  
+```
+cd services/ProductService
 dotnet run
+```
 
 Swagger will be available at:
 
+```
 http://localhost:<port>/swagger
+```
 
 ---
 
-# Example Flow: Create Order
+# 📦 Example Flow: Create Order
 
 Order creation coordinates multiple services.
 
-1. Client sends a **CreateOrder** request to **OrderService**
-
-2. OrderService calls:
-
-- **ProductService** → retrieve product information
-- **PricingService** → calculate final price
-- **InventoryService** → validate stock and reserve items
-
-3. Order is created and persisted.
-
-4. Order status moves to **Confirmed**.
+```
+Client
+   ↓
+OrderService
+   ↓
+ProductService → retrieve product information
+PricingService → calculate final price
+InventoryService → validate stock
+InventoryService → reserve stock
+   ↓
+Order persisted
+   ↓
+Order status → Confirmed
+```
 
 ---
 
-# Domain Concepts
+# 📚 Domain Concepts
 
 ## Order Lifecycle
 
 Orders follow a status workflow:
 
-- Created
-- Confirmed
-- PaymentProcessing
-- Paid
-- Cancelled
-- Expired
+```
+Created
+Confirmed
+PaymentProcessing
+Paid
+Cancelled
+Expired
+```
 
 Orders maintain a **status history** to track transitions between states.
 
+Example domain entities:
+
+```
+Order
+OrderItem
+OrderStatus
+OrderStatusHistory
+```
+
+The domain model ensures business rules such as:
+
+- Quantity validation
+- Item aggregation
+- Order total calculation
+- Status transition tracking
+
 ---
 
-# Goals of This Project
+# 🧠 Concepts Demonstrated
 
-This repository is intended to demonstrate:
+Microservices architecture
 
-- Backend architecture design
-- Microservices structure
-- Service boundaries
-- Domain modeling
-- Infrastructure setup
+Domain-driven modeling
 
-It is **not intended to be a full production system**, but a **technical architecture showcase**.
+Service communication via HTTP clients
+
+Independent databases per service
+
+Clean entity design
+
+Containerized infrastructure
+
+Scalable backend architecture
 
 ---
 
-# Future Improvements
+# 🚧 Future Improvements
 
 Planned improvements include:
 
 - API Gateway (YARP / Ocelot)
-- Event-driven communication
+- Event-driven architecture
 - Message broker (RabbitMQ / Kafka)
-- Distributed transaction patterns
-- Observability (OpenTelemetry)
-- Authentication (JWT / Identity)
-- Container orchestration (Kubernetes)
+- Distributed transaction patterns (Saga)
+- Observability with OpenTelemetry
+- Authentication with JWT / Identity
+- Container orchestration with Kubernetes
+- Centralized configuration
+- Resilience patterns (retry / circuit breaker)
 
 ---
 
-# Author
+# 👨‍💻 Author
 
-Backend engineer specialized in:
+**Juan Sebastián Cárdenas Gómez**
+
+Backend Engineer specialized in:
 
 - .NET
 - Java
@@ -229,5 +295,7 @@ Backend engineer specialized in:
 - Cloud architecture
 - Distributed systems
 
-This project was built as part of **backend architecture practice and cloud-native deployment experimentation**.
-```
+This project was built as part of **backend architecture practice and cloud-native experimentation**.
+
+🔗 GitHub: https://github.com/sebastiancgomez  
+🔗 LinkedIn: https://linkedin.com/in/juan-sebastian-cardenas-gomez-aa624731
