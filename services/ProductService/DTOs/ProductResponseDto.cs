@@ -1,6 +1,6 @@
-﻿namespace ProductService.Models
+﻿namespace ProductService.DTOs
 {
-    public class Product
+    public class ProductResponseDto
     {
         public int Id { get; set; }
 
@@ -12,8 +12,8 @@
 
         public decimal Price { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
     }
 }
