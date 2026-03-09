@@ -18,5 +18,3 @@ appsettings.Development.json
 # Docker
 *.log
 
-# EF Migrations (opcional si quieres ignorarlas)
-Migrations/

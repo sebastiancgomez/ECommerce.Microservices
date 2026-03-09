@@ -1,11 +1,107 @@
-version: "3.9"
-
 services:
+
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
+    container_name: ecommerce-sql
     environment:
       SA_PASSWORD: "REDACTED"
       ACCEPT_EULA: "Y"
     ports:
       - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    networks:
+      - ecommerce-network
+
+  productservice:
+    build:
+      context: ./services/ProductService
+    container_name: product-service
+    depends_on:
+      - sqlserver
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ProductDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "5100:8080"
+    networks:
+      - ecommerce-network
+
+  orderservice:
+    build:
+      context: ./services/OrderService
+    container_name: order-service
+    depends_on:
+      - sqlserver
+      - productservice
+      - inventoryservice
+      - pricingservice
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=OrderDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "5200:8080"
+    networks:
+      - ecommerce-network
+
+  customerservice:
+    build:
+      context: ./services/CustomerService
+    container_name: customer-service
+    depends_on:
+      - sqlserver
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CustomerDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "5300:8080"
+    networks:
+      - ecommerce-network
+
+  notificationservice:
+    build:
+      context: ./services/NotificationService
+    container_name: notification-service
+    depends_on:
+      - sqlserver
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=NotificationDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "5400:8080"
+    networks:
+      - ecommerce-network
+
+  inventoryservice:
+    build:
+      context: ./services/InventoryService
+    container_name: inventory-service
+    depends_on:
+      - sqlserver
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=InventoryDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "5600:8080"
+    networks:
+      - ecommerce-network
+
+  pricingservice:
+    build:
+      context: ./services/PricingService
+    container_name: pricing-service
+    depends_on:
+      - sqlserver
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=PricingDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "5700:8080"
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+
+volumes:
+  sql_data:
