@@ -14,6 +14,10 @@ namespace ProductService.Data
             modelBuilder.Entity<Product>()
                 .Property(p => p.Price)
                 .HasPrecision(18, 2); // Precisión segura para SQL Server
+
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Sku)
+                .IsUnique();
         }
     }
 }
