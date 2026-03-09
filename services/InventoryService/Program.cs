@@ -1,41 +1,25 @@
-using InventoryService.Data;
-using InventoryService.Models;
 using Microsoft.EntityFrameworkCore;
+using InventoryService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
+// DbContext
+builder.Services.AddDbContext<InventoryDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<InventoryDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("InventoryDb")
-    ));
-
 var app = builder.Build();
 
-// Apply migrations + seed data
+// Ejecutar migraciones automáticamente
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-
     db.Database.Migrate();
-
-    if (!db.InventoryItems.Any())
-    {
-        db.InventoryItems.AddRange(
-            new InventoryItem(1, 100),
-            new InventoryItem(2, 50),
-            new InventoryItem(3, 200)
-        );
-
-        db.SaveChanges();
-    }
 }
 
-// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -43,6 +27,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
