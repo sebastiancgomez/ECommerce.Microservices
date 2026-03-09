@@ -88,10 +88,12 @@ namespace ProductService.Services
         {
             var product = await _repository.GetByIdAsync(id);
 
-            if (product == null)
+            if (product == null || product.IsActive == false)
                 return false;
 
-            await _repository.DeleteAsync(product);
+           product.IsActive = false;
+
+            await _repository.UpdateAsync(product);
 
             return true;
         }
