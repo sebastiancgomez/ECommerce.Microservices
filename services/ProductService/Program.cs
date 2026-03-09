@@ -1,5 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
+using ProductService.Repositories;
+using ProductService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 Console.WriteLine($"ENVIRONMENT: {builder.Environment.EnvironmentName}");
@@ -11,6 +15,10 @@ builder.Services.AddDbContext<ProductDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService.Services.ProductService>();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
 
 var app = builder.Build();
 
@@ -30,5 +38,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.UseExceptionHandler("/error");
 
 app.Run();
