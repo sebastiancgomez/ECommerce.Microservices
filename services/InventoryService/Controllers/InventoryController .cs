@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using InventoryService.Services;
+using InventoryService.DTOs;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using InventoryService.Data;
 
 namespace InventoryService.Controllers;
 
@@ -8,51 +9,50 @@ namespace InventoryService.Controllers;
 [Route("api/[controller]")]
 public class InventoryController : ControllerBase
 {
-    private readonly InventoryDbContext _db;
+    private readonly IInventoryService _inventoryService;
 
-    public InventoryController(InventoryDbContext db)
+    public InventoryController(IInventoryService inventoryService)
     {
-        _db = db;
+        _inventoryService = inventoryService;
+    }
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateInventoryDto dto)
+    {
+        await _inventoryService.CreateInventoryAsync(dto);
+
+        return Ok();
     }
 
-    [HttpGet("{productId}/{quantity}")]
-    public async Task<bool> IsAvailable(int productId, int quantity)
+    [HttpGet("{productId}")]
+    public async Task<IActionResult> Get(int productId)
     {
-        var item = await _db.InventoryItems
-            .FirstOrDefaultAsync(i => i.ProductId == productId);
+        var inventory = await _inventoryService.GetInventoryAsync(productId);
 
-        if (item == null) return false;
+        if (inventory == null)
+            return NotFound();
 
-        return item.Stock >= quantity;
+        return Ok(inventory);
     }
 
-    [HttpGet("Reserve/{productId}/{quantity}")]
-    public async Task<bool> Reserve(int productId, int quantity)
+    [HttpPost("reserve")]
+    public async Task<IActionResult> Reserve(ReserveStockDto dto)
     {
-        var item = await _db.InventoryItems
-            .FirstOrDefaultAsync(i => i.ProductId == productId);
+        var result = await _inventoryService.ReserveStockAsync(dto);
 
-        if (item == null) return false;
+        if (!result)
+            return Conflict("Not enough stock");
 
-        if (item.Stock < quantity) return false;
-
-        item.Reserve(quantity);
-        await _db.SaveChangesAsync();
-
-        return true;
+        return Ok();
     }
 
-    [HttpGet("Release/{productId}/{quantity}")]
-    public async Task<bool> Release(int productId, int quantity)
+    [HttpPost("release")]
+    public async Task<IActionResult> Release(ReleaseStockDto dto)
     {
-        var item = await _db.InventoryItems
-            .FirstOrDefaultAsync(i => i.ProductId == productId);
+        var result = await _inventoryService.ReleaseStockAsync(dto);
 
-        if (item == null) return false;
+        if (!result)
+            return NotFound();
 
-        item.Release(quantity);
-        await _db.SaveChangesAsync();
-
-        return true;
+        return Ok();
     }
 }
