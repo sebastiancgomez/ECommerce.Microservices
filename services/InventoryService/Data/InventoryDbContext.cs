@@ -10,4 +10,10 @@ public class InventoryDbContext : DbContext
         : base(options) { }
 
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<InventoryItem>()
+            .HasIndex(i => i.ProductId)
+            .IsUnique();
+    }
 }
