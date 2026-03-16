@@ -1,11 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using PricingService.Data;
+using PricingService.Repositories;
+using PricingService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // DbContext
 builder.Services.AddDbContext<PricingDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IPricingRuleRepository, PricingRuleRepository>();
+builder.Services.AddScoped<IPricingService, PricingService.Services.PricingService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
