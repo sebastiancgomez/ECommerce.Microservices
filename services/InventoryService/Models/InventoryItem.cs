@@ -5,6 +5,7 @@ public class InventoryItem
     public int Id { get; private set; }
     public int ProductId { get; private set; }
     public int Stock { get; private set; }
+    public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
     public InventoryItem(int productId, int stock)
     {
