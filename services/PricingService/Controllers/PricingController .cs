@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PricingService.Data;
+using PricingService.DTOs;
+using PricingService.Services;
 
 namespace PricingService.Controllers;
 
@@ -8,22 +10,22 @@ namespace PricingService.Controllers;
 [Route("api/[controller]")]
 public class PricingController : ControllerBase
 {
-    private readonly PricingDbContext _db;
+    private readonly IPricingService _pricingService;
 
-    public PricingController(PricingDbContext db)
+    public PricingController(IPricingService pricingService)
     {
-        _db = db;
+        _pricingService = pricingService;
     }
 
-    [HttpGet("{productId}")]
-    public async Task<ActionResult<decimal>> GetPrice(int productId)
+    [HttpPost("calculate")]
+    public async Task<ActionResult<PricingResultDto>> GetPrice(PricingRequestDto request)
     {
-        var rule = await _db.PricingRules
-            .FirstOrDefaultAsync(r => r.ProductId == productId);
+       
+        var finalPrice = await _pricingService.CalculatePriceAsync(
+            request.ProductId,
+            request.Quantity,
+            request.BasePrice); 
 
-        if (rule == null)
-            return NotFound();
-
-        return rule.BasePrice;
+        return Ok(finalPrice);
     }
 }
