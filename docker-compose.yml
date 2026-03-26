@@ -4,7 +4,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: ecommerce-sql
     environment:
-      SA_PASSWORD: "REDACTED"
+      SA_PASSWORD: ${SA_PASSWORD}
       ACCEPT_EULA: "Y"
     ports:
       - "1433:1433"
@@ -20,7 +20,7 @@ services:
     depends_on:
       - sqlserver
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ProductDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_PRODUCT}
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "5100:8080"
@@ -37,7 +37,7 @@ services:
       - inventoryservice
       - pricingservice
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=OrderDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_ORDER}
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "5200:8080"
@@ -51,7 +51,7 @@ services:
     depends_on:
       - sqlserver
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CustomerDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_CUSTOMER}
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "5300:8080"
@@ -65,7 +65,7 @@ services:
     depends_on:
       - sqlserver
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=NotificationDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_NOTIFICATION}
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "5400:8080"
@@ -79,7 +79,7 @@ services:
     depends_on:
       - sqlserver
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=InventoryDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_INVENTORY}
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "5600:8080"
@@ -93,7 +93,7 @@ services:
     depends_on:
       - sqlserver
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=PricingDb;User Id=sa;Password=REDACTED;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_PRICING}
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "5700:8080"
@@ -105,3 +105,4 @@ networks:
 
 volumes:
   sql_data:
+  
