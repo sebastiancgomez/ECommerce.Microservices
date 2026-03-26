@@ -1,4 +1,4 @@
-﻿using OrderService.Models;
+﻿using OrderService.DTOs;
 
 namespace OrderService.Clients
 {

@@ -65,7 +65,8 @@ namespace ProductService.Services
                 Name = product.Name,
                 Sku = product.Sku,
                 Description = product.Description,
-                IsActive = product.IsActive
+                IsActive = product.IsActive,
+                Price = product.Price,
             };
         }
         public async Task<bool> UpdateAsync(int id, UpdateProductDto dto)
