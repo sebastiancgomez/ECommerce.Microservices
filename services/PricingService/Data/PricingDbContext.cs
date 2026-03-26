@@ -12,7 +12,7 @@ public class PricingDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PricingRule>()
-            .Property(p => p.BasePrice)
+            .Property(p => p.DiscountPercentage)
             .HasPrecision(18, 2); // Precisión segura para SQL Server
     }
 }
