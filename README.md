@@ -1,17 +1,22 @@
 # 🛒 ECommerce Microservices (.NET)
 
+![.NET](https://img.shields.io/badge/.NET-8-blue)
+![Architecture](https://img.shields.io/badge/architecture-microservices-green)
+![Database](https://img.shields.io/badge/database-sqlserver-red)
+![Docker](https://img.shields.io/badge/container-docker-blue)
+
 Backend architecture for an **e-commerce platform built with .NET 8** using a **microservices-based design**.
 
 This project demonstrates modern backend architecture practices including:
 
-- Microservices architecture
-- Domain modeling
-- Service-to-service communication
-- Independent databases per service
-- Clean domain entities
-- Dockerized infrastructure
-- REST APIs with ASP.NET Core
-- Scalable distributed system design
+* Microservices architecture
+* Domain modeling
+* Service-to-service communication
+* Independent databases per service
+* Clean domain entities
+* Dockerized infrastructure
+* REST APIs with ASP.NET Core
+* Scalable distributed system design
 
 The system models a simplified e-commerce flow where customers can place orders, inventory is validated, pricing rules are applied, and services collaborate to complete the order lifecycle.
 
@@ -21,31 +26,70 @@ The system models a simplified e-commerce flow where customers can place orders,
 
 ### Backend
 
-- .NET 8
-- ASP.NET Core Web API
-- Entity Framework Core
-- C#
+* .NET 8
+* ASP.NET Core Web API
+* Entity Framework Core
+* C#
 
 ### API
 
-- REST
-- OpenAPI / Swagger
+* REST
+* OpenAPI / Swagger
 
 ### Database
 
-- SQL Server
-- EF Core Migrations
+* SQL Server
+* EF Core Migrations
 
 ### Infrastructure
 
-- Docker
-- Docker Compose (planned)
+* Docker
+* Docker Compose *(planned)*
 
 ### Architecture
 
-- Microservices
-- Domain modeling
-- Service clients (HTTP communication)
+* Microservices
+* Domain modeling
+* Service clients (HTTP communication)
+
+---
+
+# ✅ Implemented Features
+
+The following capabilities are currently implemented and functional.
+
+### Product Service
+
+* Create product
+* Retrieve product by id
+* Update product
+* Delete product
+* DTO mapping
+* Entity validation
+
+### Inventory Service
+
+* Create inventory item
+* Retrieve inventory by product
+* Reserve stock
+* Release stock
+* Stock validation
+* Inventory constraints via migrations
+* Service layer abstraction
+* Repository pattern
+
+### Pricing Service
+
+* Create pricing rules
+* Retrieve pricing rules by product
+* Rule evaluation engine
+* Dynamic price calculation
+* Support for pricing rule conditions:
+
+  * Minimum quantity
+  * Percentage discount
+  * Fixed discount
+  * Validity period (start / end date)
 
 ---
 
@@ -55,10 +99,10 @@ The platform is composed of **multiple independent microservices**, each respons
 
 Each microservice has:
 
-- Its own **database**
-- Its own **REST API**
-- Independent **deployment**
-- A clear **bounded context**
+* Its own **database**
+* Its own **REST API**
+* Independent **deployment**
+* A clear **bounded context**
 
 Services communicate through **HTTP APIs**.
 
@@ -91,16 +135,16 @@ NotificationService --> NotificationDB[(NotificationDB)]
 
 # ☁️ Microservices
 
-| Service | Responsibility |
-|------|------|
-ProductService | Product catalog management |
-OrderService | Order creation and lifecycle |
-CustomerService | Customer management |
-NotificationService | Notifications and messaging |
-InventoryService | Product stock validation and reservation |
-PricingService | Pricing rules and price calculation |
-PaymentService | Payment processing *(planned)* |
-API Gateway | Single entry point for clients *(planned)* |
+| Service             | Responsibility                           | Status         |
+| ------------------- | ---------------------------------------- | -------------- |
+| ProductService      | Product catalog management               | ✅ Implemented  |
+| OrderService        | Order creation and lifecycle             | 🚧 In progress |
+| CustomerService     | Customer management                      | 💤 Planned     |
+| NotificationService | Notifications and messaging              | 💤 Planned     |
+| InventoryService    | Product stock validation and reservation | ✅ Implemented  |
+| PricingService      | Pricing rules and price calculation      | ✅ Implemented  |
+| PaymentService      | Payment processing                       | 💤 Planned     |
+| API Gateway         | Single entry point for clients           | 💤 Planned     |
 
 Each service is designed to evolve **independently**.
 
@@ -128,8 +172,9 @@ Typical structure inside each service:
 Controllers
 Models
 DTOs
+Repositories
+Services
 Data
-Clients
 Migrations
 ```
 
@@ -137,16 +182,16 @@ Migrations
 
 # 🔌 Service Ports
 
-| Service | HTTP | HTTPS | Database |
-|------|------|------|------|
-ProductService | 5100 | 7100 | ProductDb |
-OrderService | 5200 | 7200 | OrderDb |
-CustomerService | 5300 | 7300 | CustomerDb |
-NotificationService | 5400 | 7400 | NotificationDb |
-PaymentService | 5500 | 7500 | PaymentDb |
-InventoryService | 5600 | 7600 | InventoryDb |
-PricingService | 5700 | 7700 | PricingDb |
-API Gateway | 5000 | 7000 | — |
+| Service             | HTTP | HTTPS | Database       |
+| ------------------- | ---- | ----- | -------------- |
+| ProductService      | 5100 | 7100  | ProductDb      |
+| OrderService        | 5200 | 7200  | OrderDb        |
+| CustomerService     | 5300 | 7300  | CustomerDb     |
+| NotificationService | 5400 | 7400  | NotificationDb |
+| PaymentService      | 5500 | 7500  | PaymentDb      |
+| InventoryService    | 5600 | 7600  | InventoryDb    |
+| PricingService      | 5700 | 7700  | PricingDb      |
+| API Gateway         | 5000 | 7000  | —              |
 
 All services use **SQL Server running in Docker (port 1433)**.
 
@@ -246,7 +291,7 @@ Response example:
 ### Pricing Service
 
 ```
-GET /pricing/product/{productId}
+GET /pricing/{productId}
 ```
 
 Response example:
@@ -280,7 +325,6 @@ Response example:
 
 ```json
 {
-  "reservationId": "abc123",
   "status": "Reserved"
 }
 ```
@@ -315,28 +359,41 @@ OrderStatusHistory
 
 The domain model ensures business rules such as:
 
-- Quantity validation
-- Item aggregation
-- Order total calculation
-- Status transition tracking
+* Quantity validation
+* Item aggregation
+* Order total calculation
+* Status transition tracking
 
 ---
 
 # 🧠 Concepts Demonstrated
 
-Microservices architecture
+* Microservices architecture
+* Domain-driven modeling
+* Service communication via HTTP clients
+* Independent databases per service
+* Clean entity design
+* Repository and service layers
+* Containerized infrastructure
+* Scalable backend architecture
 
-Domain-driven modeling
+---
 
-Service communication via HTTP clients
+# 📈 Development Status
 
-Independent databases per service
+Current implemented services:
 
-Clean entity design
+* Product catalog service
+* Inventory reservation system
+* Pricing rule engine
 
-Containerized infrastructure
+Next milestones:
 
-Scalable backend architecture
+* Order orchestration service
+* API Gateway
+* Event-driven communication
+* RabbitMQ integration
+* Kubernetes deployment
 
 ---
 
@@ -344,15 +401,15 @@ Scalable backend architecture
 
 Planned improvements include:
 
-- API Gateway (YARP / Ocelot)
-- Event-driven architecture
-- Message broker (RabbitMQ / Kafka)
-- Distributed transaction patterns (Saga)
-- Observability with OpenTelemetry
-- Authentication with JWT / Identity
-- Container orchestration with Kubernetes
-- Centralized configuration
-- Resilience patterns (retry / circuit breaker)
+* API Gateway (YARP / Ocelot)
+* Event-driven architecture
+* Message broker (RabbitMQ / Kafka)
+* Distributed transaction patterns (Saga)
+* Observability with OpenTelemetry
+* Authentication with JWT / Identity
+* Container orchestration with Kubernetes
+* Centralized configuration
+* Resilience patterns (retry / circuit breaker)
 
 ---
 
@@ -362,13 +419,16 @@ Planned improvements include:
 
 Backend Engineer specialized in:
 
-- .NET
-- Java
-- Microservices
-- Cloud architecture
-- Distributed systems
+* .NET
+* Java
+* Microservices
+* Cloud architecture
+* Distributed systems
 
 This project was built as part of **backend architecture practice and cloud-native experimentation**.
 
-🔗 GitHub: https://github.com/sebastiancgomez  
-🔗 LinkedIn: https://linkedin.com/in/juan-sebastian-cardenas-gomez-aa624731
+🔗 GitHub
+https://github.com/sebastiancgomez
+
+🔗 LinkedIn
+https://linkedin.com/in/sebastiancgomez
