@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using PricingService.Data;
 using PricingService.DTOs;
+using PricingService.Models;
 using PricingService.Services;
 
 namespace PricingService.Controllers;
@@ -15,6 +16,12 @@ public class PricingController : ControllerBase
     public PricingController(IPricingService pricingService)
     {
         _pricingService = pricingService;
+    }
+    [HttpPost]
+    public async Task<IActionResult> Create(CreatePricingRuleDto dto)
+    {
+        await _pricingService.CreateRuleAsync(dto);
+        return Ok();
     }
 
     [HttpPost("calculate")]

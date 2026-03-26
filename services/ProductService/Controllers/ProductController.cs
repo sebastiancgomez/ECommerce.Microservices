@@ -5,12 +5,12 @@ using ProductService.Services;
 namespace ProductService.Controllers
 {
     [ApiController]
-    [Route("products")]
-    public class ProductsController : ControllerBase
+    [Route("api/[controller]")]
+    public class ProductController : ControllerBase
     {
         private readonly IProductService _service;
 
-        public ProductsController(IProductService service)
+        public ProductController(IProductService service)
         {
             _service = service;
         }

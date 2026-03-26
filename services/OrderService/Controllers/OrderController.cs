@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Models;
 using OrderService.Clients;
+using OrderService.DTOs;
 
 namespace OrderService.Controllers;
 
@@ -52,7 +53,14 @@ public class OrderController : ControllerBase
 
             if (product == null)
                 return BadRequest($"Cannot get pricing for product {itemDto.ProductId}");
-            var pricingInfo = await _pricing.GetPrice(itemDto.ProductId);
+            var pricingRequest = new PricingRequestDto
+            {
+                ProductId = itemDto.ProductId,
+                Quantity = itemDto.Quantity,
+                BasePrice = product.Price,
+            };
+
+            var pricingInfo = await _pricing.GetPrice(pricingRequest);
             // 2️ Verificar disponibilidad
             var available = await _inventory.IsAvailable(
                 itemDto.ProductId,
@@ -68,7 +76,7 @@ public class OrderController : ControllerBase
             order.AddItem(
                 itemDto.ProductId,
                 product.Name,
-                pricingInfo,
+                pricingInfo.FinalPrice,
                 itemDto.Quantity);
         }
 
@@ -81,7 +89,7 @@ public class OrderController : ControllerBase
         return CreatedAtAction(
             nameof(GetOrderById),
             new { id = order.Id },
-            order);
+            new { id = order.Id });
     }
 
     // GET /api/Order/{id}
@@ -95,6 +103,20 @@ public class OrderController : ControllerBase
 
         if (order == null) return NotFound();
 
-        return Ok(order);
+        var response = new OrderResponseDto
+        {
+            Id = order.Id,
+            CreatedAt = order.CreatedAt,
+            Status = order.Status.ToString(),
+            Items = order.Items.Select(i => new OrderItemDto
+            {
+                ProductId = i.ProductId,
+                ProductName = i.ProductName,
+                UnitPrice = i.UnitPrice,
+                Quantity = i.Quantity
+            }).ToList()
+        };
+
+        return Ok(response);
     }
 }
