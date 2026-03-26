@@ -1,4 +1,4 @@
-﻿using OrderService.Models;
+﻿using OrderService.DTOs;
 using System.Net.Http.Json;
 
 namespace OrderService.Clients;
@@ -13,9 +13,12 @@ public class PricingClient : IPricingClient
         _httpClient = httpClient;
     }
 
-    public async Task<decimal> GetPrice(int productId)
+    public async Task<PricingResponseDto> GetPrice(PricingRequestDto dto)
     {
-        return await _httpClient.GetFromJsonAsync<decimal>(
-            $"api/Pricing/{productId}");
+        var response = await _httpClient.PostAsJsonAsync<PricingRequestDto>(
+            $"api/Pricing/Calculate", dto);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<PricingResponseDto>()!;
+
     }
 }

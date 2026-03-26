@@ -1,9 +1,9 @@
-﻿using OrderService.Models;
+﻿using OrderService.DTOs;
 
 namespace OrderService.Clients
 {
     public interface IPricingClient
     {
-        Task<decimal> GetPrice(int productId);
+        Task<PricingResponseDto> GetPrice(PricingRequestDto dto);
     }
 }

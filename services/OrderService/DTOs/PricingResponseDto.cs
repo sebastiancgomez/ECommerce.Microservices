@@ -1,6 +1,6 @@
-﻿namespace OrderService.Models
+﻿namespace OrderService.DTOs
 {
-    public class PricingInfo
+    public class PricingResponseDto
     {
         public int ProductId { get; set; }
         public string Name { get; set; } = string.Empty;

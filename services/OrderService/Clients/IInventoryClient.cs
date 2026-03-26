@@ -1,4 +1,6 @@
-﻿namespace OrderService.Clients
+﻿using OrderService.Models;
+
+namespace OrderService.Clients
 {
     public interface IInventoryClient
     {
