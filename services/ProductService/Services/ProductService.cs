@@ -1,4 +1,5 @@
-﻿using ProductService.DTOs;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using ProductService.DTOs;
 using ProductService.Models;
 using ProductService.Repositories;
 
@@ -7,10 +8,12 @@ namespace ProductService.Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _repository;
+        private readonly ILogger<ProductService> _logger;
 
-        public ProductService(IProductRepository repository)
+        public ProductService(IProductRepository repository, ILogger<ProductService> logger )
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task<ProductResponseDto> CreateProductAsync(ProductCreateDto dto)
@@ -24,6 +27,9 @@ namespace ProductService.Services
             };
 
             var created = await _repository.AddAsync(product);
+
+            _logger.LogInformation("Product {Id} created successfully with SKU {Sku}, name {Name} and price {Price}",
+                created.Id, created.Sku, created.Name, created.Price);
 
             return new ProductResponseDto
             {
@@ -56,8 +62,11 @@ namespace ProductService.Services
         {
             var product = await _repository.GetByIdAsync(id);
 
-            if (product == null)
+            if (product is null)
+            {
+                _logger.LogWarning("Product {ProductId} not found", id);
                 return null;
+            }
 
             return new ProductResponseDto
             {
@@ -73,15 +82,22 @@ namespace ProductService.Services
         {
             var product = await _repository.GetByIdAsync(id);
 
-            if (product == null)
+            if (product is null)
+            {
+                _logger.LogWarning("Product {ProductId} not found", id);
                 return false;
+            }
 
             product.Name = dto.Name;
             product.Sku = dto.Sku;
-            product.Description = dto.Description;
+            product.Price = dto.Price;
+            product.Description = dto.Description!;
             product.IsActive = dto.IsActive;
 
             await _repository.UpdateAsync(product);
+
+            _logger.LogInformation("Product {Id} Updated successfully with SKU {Sku}, name {Name} and price {Price}",
+                id, dto.Sku, dto.Name, dto.Price);
 
             return true;
         }
@@ -90,11 +106,16 @@ namespace ProductService.Services
             var product = await _repository.GetByIdAsync(id);
 
             if (product == null || product.IsActive == false)
+            {
+                _logger.LogWarning("Product {ProductId} not found or is disable", id);
                 return false;
+            }
 
-           product.IsActive = false;
+            product.IsActive = false;
 
             await _repository.UpdateAsync(product);
+            _logger.LogInformation("Product {Id} Disabled successfully",
+                id);
 
             return true;
         }
