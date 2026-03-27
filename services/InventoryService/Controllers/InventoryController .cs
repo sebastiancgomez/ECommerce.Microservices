@@ -18,9 +18,15 @@ public class InventoryController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateInventoryDto dto)
     {
-        await _inventoryService.CreateInventoryAsync(dto);
-
-        return Ok();
+        try
+        {
+            await _inventoryService.CreateInventoryAsync(dto);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpGet("{productId}")]

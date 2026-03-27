@@ -9,19 +9,46 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHttpClient<InventoryClient>(client =>
+builder.Services.AddHttpClient<IInventoryClient, InventoryClient>(client =>
 {
     client.BaseAddress = new Uri("http://inventoryservice:8080");
-});
-builder.Services.AddHttpClient<ProductClient>(client =>
+})
+.AddStandardResilienceHandler(options =>
 {
-    client.BaseAddress = new Uri("http://ProductService:8080");
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.Delay = TimeSpan.FromSeconds(2);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    options.CircuitBreaker.FailureRatio = 0.5;
+    options.CircuitBreaker.MinimumThroughput = 5;
 });
-builder.Services.AddHttpClient<PricingClient>(client =>
+
+builder.Services.AddHttpClient<IProductClient, ProductClient>(client =>
 {
-    client.BaseAddress = new Uri("http://PricingService:8080");
+    client.BaseAddress = new Uri("http://productservice:8080");
+})
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.Delay = TimeSpan.FromSeconds(2);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    options.CircuitBreaker.FailureRatio = 0.5;
+    options.CircuitBreaker.MinimumThroughput = 5;
+});
+
+builder.Services.AddHttpClient<IPricingClient, PricingClient>(client =>
+{
+    client.BaseAddress = new Uri("http://pricingservice:8080");
+})
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.Delay = TimeSpan.FromSeconds(2);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    options.CircuitBreaker.FailureRatio = 0.5;
+    options.CircuitBreaker.MinimumThroughput = 5;
 });
 
 var app = builder.Build();
@@ -42,5 +69,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+
+app.UseExceptionHandler("/error");
+
+app.MapHealthChecks("/health");
 
 app.Run();
