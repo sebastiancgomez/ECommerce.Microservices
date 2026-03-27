@@ -20,8 +20,15 @@ public class PricingController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreatePricingRuleDto dto)
     {
-        await _pricingService.CreateRuleAsync(dto);
-        return Ok();
+        try
+        {
+            await _pricingService.CreateRuleAsync(dto);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     [HttpPost("calculate")]

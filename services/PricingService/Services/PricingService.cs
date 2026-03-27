@@ -1,4 +1,5 @@
-﻿using PricingService.DTOs;
+﻿using PricingService.Clients;
+using PricingService.DTOs;
 using PricingService.Models;
 using PricingService.Repositories;
 
@@ -7,14 +8,20 @@ namespace PricingService.Services;
 public class PricingService : IPricingService
 {
     private readonly IPricingRuleRepository _repository;
+    private readonly IProductClient _productClient;
 
-    public PricingService(IPricingRuleRepository repository)
+    public PricingService(IPricingRuleRepository repository, IProductClient productClient)
     {
         _repository = repository;
+        _productClient = productClient; 
     }
 
     public async Task CreateRuleAsync(CreatePricingRuleDto dto)
     {
+        var productExists = await _productClient.ExistsAsync(dto.ProductId);
+        if (!productExists)
+            throw new InvalidOperationException($"Product {dto.ProductId} does not exist.");
+
         var rule = new PricingRule(
             dto.ProductId,
             dto.MinQuantity,

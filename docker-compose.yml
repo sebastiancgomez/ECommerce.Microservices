@@ -46,6 +46,8 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      productservice:
+        condition: service_healthy
     environment:
       ConnectionStrings__DefaultConnection: ${DB_CONNECTION_INVENTORY}
       ASPNETCORE_ENVIRONMENT: "Development"
@@ -66,6 +68,8 @@ services:
     container_name: pricing-service
     depends_on:
       sqlserver:
+        condition: service_healthy
+      productservice:
         condition: service_healthy
     environment:
       ConnectionStrings__DefaultConnection: ${DB_CONNECTION_PRICING}

@@ -12,15 +12,15 @@ namespace OrderService.Controllers;
 [Route("api/[controller]")]
 public class OrderController : ControllerBase
 {
-    private readonly ProductClient _productClient;
+    private readonly IProductClient _productClient;
     private readonly OrderDbContext _db;
-    private readonly InventoryClient _inventory;
-    private readonly PricingClient _pricing;
+    private readonly IInventoryClient _inventory;
+    private readonly IPricingClient _pricing;
 
     public OrderController( OrderDbContext db, 
-        InventoryClient inventory,
-        PricingClient pricing,
-        ProductClient productClient)
+        IInventoryClient inventory,
+        IPricingClient pricing,
+        IProductClient productClient)
     {
         _db = db;
         _inventory = inventory;
