@@ -1,10 +1,10 @@
-﻿namespace CustomerService.Models;
+﻿namespace CustomerService.DTOs;
 
-public class Customer
+public class CustomerDto
 {
     public int Id { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
 }
