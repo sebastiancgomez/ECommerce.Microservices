@@ -34,4 +34,15 @@ public class InventoryClient: IInventoryClient
             $"api/Inventory/Reserve", dto);
        
     }
+    public async Task Release(int productId, int quantity)
+    {
+        var dto = new ReleaseStockDto
+        {
+            ProductId = productId,
+            Quantity = quantity
+        };
+        await _httpClient.PostAsJsonAsync<ReleaseStockDto>(
+            $"api/Inventory/Release", dto);
+
+    }
 }
