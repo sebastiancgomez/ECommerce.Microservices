@@ -278,8 +278,7 @@ docker compose down -v
 ---
 
 # 🔄 Order Creation Sequence
-
-```
+```mermaid
 sequenceDiagram
 
 Client->>OrderService: POST /orders
