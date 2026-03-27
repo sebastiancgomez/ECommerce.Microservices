@@ -117,8 +117,7 @@ Services communicate through **resilient HTTP APIs** using Polly.
 ---
 
 # 📊 Architecture Diagram
-
-```
+```mermaid
 flowchart LR
 
 Client --> APIGateway
