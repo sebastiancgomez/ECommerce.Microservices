@@ -3,6 +3,7 @@
 public class Order
 {
     public int Id { get; private set; }
+    public int CustomerId { get; private set; }  
 
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
@@ -12,6 +13,12 @@ public class Order
     public decimal Total => _items.Sum(i => i.TotalPrice);
     public OrderStatus Status { get; private set; } = OrderStatus.Created;
     public IReadOnlyCollection<OrderStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
+
+    public Order(int customerId) 
+    {
+        CustomerId = customerId;
+    }
+    private Order() { } 
 
     public void AddItem(int productId, string productName, decimal unitPrice, int quantity)
     {

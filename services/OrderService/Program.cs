@@ -1,13 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderService.Clients;
 using OrderService.Data;
+using OrderService.Repositories;
+using OrderService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // DbContext
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderService, OrderService.Services.OrderService>();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
