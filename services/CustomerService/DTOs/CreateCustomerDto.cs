@@ -1,4 +1,4 @@
-﻿namespace CustomerService.Models;
+﻿namespace CustomerService.DTOs;
 
 public class CreateCustomerDto
 {
