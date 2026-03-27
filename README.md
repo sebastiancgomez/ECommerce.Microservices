@@ -4,19 +4,20 @@
 ![Architecture](https://img.shields.io/badge/architecture-microservices-green)
 ![Database](https://img.shields.io/badge/database-sqlserver-red)
 ![Docker](https://img.shields.io/badge/container-docker-blue)
+![Resilience](https://img.shields.io/badge/resilience-polly-orange)
 
 Backend architecture for an **e-commerce platform built with .NET 8** using a **microservices-based design**.
 
 This project demonstrates modern backend architecture practices including:
 
-* Microservices architecture
-* Domain modeling
-* Service-to-service communication
-* Independent databases per service
-* Clean domain entities
-* Dockerized infrastructure
-* REST APIs with ASP.NET Core
-* Scalable distributed system design
+- Microservices architecture
+- Domain modeling
+- Service-to-service communication with resilience patterns
+- Independent databases per service
+- Clean domain entities
+- Dockerized infrastructure with health checks
+- REST APIs with ASP.NET Core
+- Scalable distributed system design
 
 The system models a simplified e-commerce flow where customers can place orders, inventory is validated, pricing rules are applied, and services collaborate to complete the order lifecycle.
 
@@ -25,71 +26,78 @@ The system models a simplified e-commerce flow where customers can place orders,
 # 🚀 Tech Stack
 
 ### Backend
+- .NET 8
+- ASP.NET Core Web API
+- Entity Framework Core
+- C#
 
-* .NET 8
-* ASP.NET Core Web API
-* Entity Framework Core
-* C#
+### Resilience
+- Polly (via `Microsoft.Extensions.Http.Resilience`)
+- Retry pattern
+- Circuit Breaker pattern
 
 ### API
-
-* REST
-* OpenAPI / Swagger
+- REST
+- OpenAPI / Swagger
 
 ### Database
-
-* SQL Server
-* EF Core Migrations
+- SQL Server
+- EF Core Migrations (applied automatically on startup)
 
 ### Infrastructure
-
-* Docker
-* Docker Compose *(planned)*
+- Docker
+- Docker Compose
+- Health Checks (per service)
 
 ### Architecture
-
-* Microservices
-* Domain modeling
-* Service clients (HTTP communication)
+- Microservices
+- Domain modeling
+- Service clients (HTTP communication)
+- Interface-based HTTP clients
 
 ---
 
 # ✅ Implemented Features
 
-The following capabilities are currently implemented and functional.
-
 ### Product Service
-
-* Create product
-* Retrieve product by id
-* Update product
-* Delete product
-* DTO mapping
-* Entity validation
+- Create product
+- Retrieve product by id
+- Update product
+- Delete product
+- DTO mapping
+- Entity validation
 
 ### Inventory Service
-
-* Create inventory item
-* Retrieve inventory by product
-* Reserve stock
-* Release stock
-* Stock validation
-* Inventory constraints via migrations
-* Service layer abstraction
-* Repository pattern
+- Create inventory item (validates product exists in ProductService)
+- Retrieve inventory by product
+- Reserve stock
+- Release stock
+- Stock validation
+- Inventory constraints via migrations
+- Service layer abstraction
+- Repository pattern
 
 ### Pricing Service
+- Create pricing rules (validates product exists in ProductService)
+- Retrieve pricing rules by product
+- Rule evaluation engine
+- Dynamic price calculation
+- Support for pricing rule conditions:
+  - Minimum quantity
+  - Percentage discount
+  - Fixed discount
+  - Validity period (start / end date)
 
-* Create pricing rules
-* Retrieve pricing rules by product
-* Rule evaluation engine
-* Dynamic price calculation
-* Support for pricing rule conditions:
+### Order Service
+- Create order
+- Integration with ProductService, InventoryService and PricingService
+- Resilient HTTP clients with retry and circuit breaker (Polly)
 
-  * Minimum quantity
-  * Percentage discount
-  * Fixed discount
-  * Validity period (start / end date)
+### Infrastructure
+- Health check endpoint (`/health`) on every service
+- Docker Compose orchestration with `service_healthy` conditions
+- Automatic EF Core migrations on startup
+- Credentials managed via `.env` file (never committed)
 
 ---
 
@@ -98,19 +106,19 @@ The following capabilities are currently implemented and functional.
 The platform is composed of **multiple independent microservices**, each responsible for a specific business capability.
 
 Each microservice has:
+- Its own **database**
+- Its own **REST API**
+- Its own **health check endpoint**
+- Independent **deployment**
+- A clear **bounded context**
 
-* Its own **database**
-* Its own **REST API**
-* Independent **deployment**
-* A clear **bounded context**
-
-Services communicate through **HTTP APIs**.
+Services communicate through **resilient HTTP APIs** using Polly.
 
 ---
 
 # 📊 Architecture Diagram
 
-```mermaid
+```
 flowchart LR
 
 Client --> APIGateway
@@ -122,6 +130,9 @@ APIGateway --> CustomerService
 OrderService --> ProductService
 OrderService --> PricingService
 OrderService --> InventoryService
+
+InventoryService --> ProductService
+PricingService --> ProductService
 
 InventoryService --> InventoryDB[(InventoryDB)]
 PricingService --> PricingDB[(PricingDB)]
@@ -135,16 +146,16 @@ NotificationService --> NotificationDB[(NotificationDB)]
 
 # ☁️ Microservices
 
-| Service             | Responsibility                           | Status         |
-| ------------------- | ---------------------------------------- | -------------- |
-| ProductService      | Product catalog management               | ✅ Implemented  |
-| OrderService        | Order creation and lifecycle             | 🚧 In progress |
-| CustomerService     | Customer management                      | 💤 Planned     |
-| NotificationService | Notifications and messaging              | 💤 Planned     |
-| InventoryService    | Product stock validation and reservation | ✅ Implemented  |
-| PricingService      | Pricing rules and price calculation      | ✅ Implemented  |
-| PaymentService      | Payment processing                       | 💤 Planned     |
-| API Gateway         | Single entry point for clients           | 💤 Planned     |
+| Service | Responsibility | Status |
+|---|---|---|
+| ProductService | Product catalog management | ✅ Implemented |
+| OrderService | Order creation and lifecycle | 🚧 In progress |
+| CustomerService | Customer management | 💤 Planned |
+| NotificationService | Notifications and messaging | 💤 Planned |
+| InventoryService | Product stock validation and reservation | ✅ Implemented |
+| PricingService | Pricing rules and price calculation | ✅ Implemented |
+| PaymentService | Payment processing | 💤 Planned |
+| API Gateway | Single entry point for clients | 💤 Planned |
 
 Each service is designed to evolve **independently**.
 
@@ -161,14 +172,12 @@ services
  ├─ InventoryService
  ├─ PricingService
  └─ PaymentService (planned)
-
-docker
- └─ sqlserver
 ```
 
 Typical structure inside each service:
 
 ```
+Clients
 Controllers
 Models
 DTOs
@@ -182,67 +191,96 @@ Migrations
 
 # 🔌 Service Ports
 
-| Service             | HTTP | HTTPS | Database       |
-| ------------------- | ---- | ----- | -------------- |
-| ProductService      | 5100 | 7100  | ProductDb      |
-| OrderService        | 5200 | 7200  | OrderDb        |
-| CustomerService     | 5300 | 7300  | CustomerDb     |
-| NotificationService | 5400 | 7400  | NotificationDb |
-| PaymentService      | 5500 | 7500  | PaymentDb      |
-| InventoryService    | 5600 | 7600  | InventoryDb    |
-| PricingService      | 5700 | 7700  | PricingDb      |
-| API Gateway         | 5000 | 7000  | —              |
+| Service | HTTP | Database |
+|---|---|---|
+| ProductService | 5100 | ProductDb |
+| OrderService | 5200 | OrderDb |
+| CustomerService | 5300 | CustomerDb |
+| NotificationService | 5400 | NotificationDb |
+| InventoryService | 5600 | InventoryDb |
+| PricingService | 5700 | PricingDb |
+| API Gateway | 5000 | — |
 
 All services use **SQL Server running in Docker (port 1433)**.
 
 ---
 
+# 🔐 Security & Configuration
+
+Credentials and sensitive configuration are **never committed to the repository**.
+
+All environment variables are managed via a `.env` file:
+
+```bash
+# Copy the example file and fill in your values
+cp .env.example .env
+```
+
+The `.env.example` file is versioned as a reference template with placeholder values. The `.env` file is listed in `.gitignore`.
+
+---
+
 # 🐳 Running the Project
 
-## 1. Start SQL Server with Docker
+## Prerequisites
+- Docker Desktop
+- .NET 8 SDK (for local development without Docker)
 
-```
-docker run -e "ACCEPT_EULA=Y" \
--e "SA_PASSWORD=YourPassword123!" \
--p 1433:1433 \
---name ecommerce-sql \
--d mcr.microsoft.com/mssql/server:2022-latest
-```
+## 1. Configure environment variables
 
----
-
-## 2. Run database migrations
-
-Inside each service:
-
-```
-dotnet ef database update
+```bash
+cp .env.example .env
+# Edit .env with your credentials
 ```
 
----
+## 2. Start all services
 
-## 3. Run a service
-
-Example:
-
+```bash
+docker compose up --build
 ```
-cd services/ProductService
-dotnet run
-```
+
+Docker Compose will:
+1. Start SQL Server and wait until it is **healthy**
+2. Start ProductService and wait until it is **healthy**
+3. Start InventoryService and PricingService (depend on ProductService being healthy)
+4. Start OrderService once all dependencies are healthy
 
 Swagger will be available at:
-
 ```
 http://localhost:<port>/swagger
+```
+
+## 3. Health checks
+
+Every service exposes a health endpoint:
+```
+GET http://localhost:<port>/health
+```
+
+## Useful commands
+
+```bash
+# View logs of a specific service
+docker compose logs productservice
+
+# Follow logs in real time
+docker compose logs -f
+
+# Check status of all containers
+docker compose ps
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (resets databases)
+docker compose down -v
 ```
 
 ---
 
 # 🔄 Order Creation Sequence
 
-This sequence diagram illustrates how services collaborate during the order creation process.
-
-```mermaid
+```
 sequenceDiagram
 
 Client->>OrderService: POST /orders
@@ -266,67 +304,51 @@ OrderService-->>Client: Order Created
 
 ---
 
+# 🛡 Resilience Patterns
+
+Inter-service HTTP communication is protected with **Polly** via `Microsoft.Extensions.Http.Resilience`.
+
+Each HTTP client is configured with:
+
+- **Retry** — up to 3 automatic retries with a 2-second delay between attempts
+- **Circuit Breaker** — opens after 50% failure rate over a 30-second window (minimum 5 requests)
+
+Example configuration:
+
+```csharp
+builder.Services.AddHttpClient<IInventoryClient, InventoryClient>(client =>
+{
+    client.BaseAddress = new Uri("http://inventoryservice:8080");
+})
+.AddStandardResilienceHandler(options =>
+{
+    options.Retry.MaxRetryAttempts = 3;
+    options.Retry.Delay = TimeSpan.FromSeconds(2);
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    options.CircuitBreaker.FailureRatio = 0.5;
+    options.CircuitBreaker.MinimumThroughput = 5;
+});
+```
+
+---
+
 # 📡 Service Communication Contracts
 
-Inter-service communication is based on **REST APIs with DTO contracts**.
-
 ### Product Service
-
 ```
-GET /products/{id}
+GET /api/products/{id}
 ```
-
-Response example:
-
-```json
-{
-  "id": 10,
-  "name": "Laptop",
-  "price": 1200.00
-}
-```
-
----
 
 ### Pricing Service
-
 ```
-GET /pricing/{productId}
+POST /api/pricing/calculate
 ```
-
-Response example:
-
-```json
-{
-  "productId": 10,
-  "basePrice": 1200.00,
-  "finalPrice": 1150.00
-}
-```
-
----
 
 ### Inventory Service
-
 ```
-POST /inventory/reserve
-```
-
-Request example:
-
-```json
-{
-  "productId": 10,
-  "quantity": 2
-}
-```
-
-Response example:
-
-```json
-{
-  "status": "Reserved"
-}
+GET  /api/inventory/{productId}
+POST /api/inventory/reserve
+POST /api/inventory/release
 ```
 
 ---
@@ -335,81 +357,60 @@ Response example:
 
 ## Order Lifecycle
 
-Orders follow a status workflow:
-
 ```
-Created
-Confirmed
-PaymentProcessing
-Paid
-Cancelled
-Expired
+Created → Confirmed → PaymentProcessing → Paid → Cancelled / Expired
 ```
 
 Orders maintain a **status history** to track transitions between states.
-
-Example domain entities:
-
-```
-Order
-OrderItem
-OrderStatus
-OrderStatusHistory
-```
-
-The domain model ensures business rules such as:
-
-* Quantity validation
-* Item aggregation
-* Order total calculation
-* Status transition tracking
 
 ---
 
 # 🧠 Concepts Demonstrated
 
-* Microservices architecture
-* Domain-driven modeling
-* Service communication via HTTP clients
-* Independent databases per service
-* Clean entity design
-* Repository and service layers
-* Containerized infrastructure
-* Scalable backend architecture
-
----
-
-# 📈 Development Status
-
-Current implemented services:
-
-* Product catalog service
-* Inventory reservation system
-* Pricing rule engine
-
-Next milestones:
-
-* Order orchestration service
-* API Gateway
-* Event-driven communication
-* RabbitMQ integration
-* Kubernetes deployment
+- Microservices architecture
+- Domain-driven modeling
+- Interface-based HTTP clients
+- Resilient service communication (Polly — retry + circuit breaker)
+- Health checks per service with Docker Compose orchestration
+- Independent databases per service
+- Clean entity design
+- Repository and service layers
+- Containerized infrastructure
+- Credentials management with `.env`
+- Automatic EF Core migrations on startup
 
 ---
 
 # 🚧 Future Improvements
 
-Planned improvements include:
+- API Gateway (YARP / Ocelot)
+- Event-driven architecture
+- Message broker (RabbitMQ / Kafka)
+- Distributed transaction patterns (Saga)
+- Observability with OpenTelemetry
+- Structured logging (Serilog)
+- Authentication with JWT / Identity
+- Container orchestration with Kubernetes
+- Centralized configuration
 
-* API Gateway (YARP / Ocelot)
-* Event-driven architecture
-* Message broker (RabbitMQ / Kafka)
-* Distributed transaction patterns (Saga)
-* Observability with OpenTelemetry
-* Authentication with JWT / Identity
-* Container orchestration with Kubernetes
-* Centralized configuration
-* Resilience patterns (retry / circuit breaker)
+---
+
+# 📈 Development Status
+
+Implemented:
+- Product catalog service
+- Inventory reservation system
+- Pricing rule engine
+- Order integration with resilient HTTP clients
+- Health checks and Docker Compose orchestration
+- Secure credentials management
+
+Next milestones:
+- CustomerService and NotificationService
+- Complete order lifecycle
+- Structured logging
+- API Gateway
+- Event-driven communication with RabbitMQ
 
 ---
 
@@ -418,17 +419,11 @@ Planned improvements include:
 **Juan Sebastián Cárdenas Gómez**
 
 Backend Engineer specialized in:
+- .NET
+- Java
+- Microservices
+- Cloud architecture
+- Distributed systems
 
-* .NET
-* Java
-* Microservices
-* Cloud architecture
-* Distributed systems
-
-This project was built as part of **backend architecture practice and cloud-native experimentation**.
-
-🔗 GitHub
-https://github.com/sebastiancgomez
-
-🔗 LinkedIn
-https://linkedin.com/in/sebastiancgomez
+🔗 GitHub: https://github.com/sebastiancgomez  
+🔗 LinkedIn: https://linkedin.com/in/sebastiancgomez
