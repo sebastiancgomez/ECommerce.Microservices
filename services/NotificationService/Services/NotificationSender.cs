@@ -1,12 +1,20 @@
-﻿using NotificationService.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using NotificationService.Data;
+using NotificationService.DTOs;
+using NotificationService.Models;
 
 namespace NotificationService.Services;
 
-public class NotificationSender
+public class NotificationSender : INotificationSender
 {
-    private readonly List<Notification> _sentNotifications = new();
+    private readonly NotificationDbContext _context;
 
-    public Task SendNotificationAsync(string recipient, string message)
+    public NotificationSender(NotificationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task SendAsync(string recipient, string message)
     {
         var notification = new Notification
         {
@@ -14,16 +22,24 @@ public class NotificationSender
             Message = message
         };
 
-        _sentNotifications.Add(notification);
+        _context.Notifications.Add(notification);
+        await _context.SaveChangesAsync();
 
-        // Simula envío (puedes reemplazar con email, RabbitMQ, etc.)
         Console.WriteLine($"Notification sent to {recipient}: {message}");
-
-        return Task.CompletedTask;
     }
 
-    public Task<List<Notification>> GetSentNotificationsAsync()
+    public async Task<IEnumerable<NotificationDto>> GetAllAsync()
     {
-        return Task.FromResult(_sentNotifications);
+        var notifications = await _context.Notifications
+            .OrderByDescending(n => n.CreatedAt)
+            .ToListAsync();
+
+        return notifications.Select(n => new NotificationDto
+        {
+            Id = n.Id,
+            Recipient = n.Recipient,
+            Message = n.Message,
+            CreatedAt = n.CreatedAt
+        });
     }
 }
