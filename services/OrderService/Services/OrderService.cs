@@ -11,21 +11,26 @@ public class OrderService : IOrderService
     private readonly IProductClient _productClient;
     private readonly IInventoryClient _inventoryClient;
     private readonly IPricingClient _pricingClient;
+    private readonly ILogger<OrderService> _logger;
 
     public OrderService(
         IOrderRepository repository,
         IProductClient productClient,
         IInventoryClient inventoryClient,
-        IPricingClient pricingClient)
+        IPricingClient pricingClient,
+        ILogger<OrderService> logger)
     {
         _repository = repository;
         _productClient = productClient;
         _inventoryClient = inventoryClient;
         _pricingClient = pricingClient;
+        _logger = logger;
     }
 
     public async Task<OrderResponseDto> CreateAsync(CreateOrderDto dto)
     {
+        _logger.LogInformation("Creating order for customer {CustomerId} with {ItemCount} items",
+            dto.CustomerId, dto.Items.Count);
         var order = new Order(dto.CustomerId);
         var reservedItems = new List<(int ProductId, int Quantity)>(); // ← track de reservas
 
@@ -36,7 +41,10 @@ public class OrderService : IOrderService
                 // 1. Validar que el producto existe
                 var product = await _productClient.GetProductById(itemDto.ProductId);
                 if (product is null)
+                {
+                    _logger.LogWarning("Product {ProductId} not found", itemDto.ProductId);
                     throw new InvalidOperationException($"Product {itemDto.ProductId} not found.");
+                }
 
                 // 2. Calcular precio
                 var pricingRequest = new PricingRequestDto
@@ -46,15 +54,23 @@ public class OrderService : IOrderService
                     BasePrice = product.Price
                 };
                 var pricingInfo = await _pricingClient.GetPrice(pricingRequest);
+                _logger.LogInformation("Pricing for product {ProductId}: base={BasePrice} final={FinalPrice}",
+                    itemDto.ProductId, product.Price, pricingInfo.FinalPrice);
 
                 // 3. Validar stock
                 var available = await _inventoryClient.IsAvailable(itemDto.ProductId, itemDto.Quantity);
                 if (!available)
+                {
+                    _logger.LogWarning("Not enough stock for product {ProductId}, quantity requested {Quantity}",
+                        itemDto.ProductId, itemDto.Quantity);
                     throw new InvalidOperationException($"Not enough stock for product {itemDto.ProductId}.");
+                }
 
                 // 4. Reservar stock
                 await _inventoryClient.Reserve(itemDto.ProductId, itemDto.Quantity);
                 reservedItems.Add((itemDto.ProductId, itemDto.Quantity)); // ← registrar reserva
+                _logger.LogInformation("Reserved {Quantity} units of product {ProductId}",
+                   itemDto.Quantity, itemDto.ProductId);
 
                 // 5. Agregar item a la orden
                 order.AddItem(itemDto.ProductId, product.Name, pricingInfo.FinalPrice, itemDto.Quantity);
@@ -62,6 +78,8 @@ public class OrderService : IOrderService
 
             order.ChangeStatus(OrderStatus.Confirmed);
             await _repository.AddAsync(order);
+            _logger.LogInformation("Order {OrderId} created successfully for customer {CustomerId} with total {Total}",
+                order.Id, order.CustomerId, order.Total);
 
             return ToDto(order);
         }
@@ -73,11 +91,13 @@ public class OrderService : IOrderService
                 try
                 {
                     await _inventoryClient.Release(productId, quantity);
+                    _logger.LogInformation("[SAGA] Released {Quantity} units of product {ProductId}",
+                        quantity, productId);
                 }
                 catch (Exception releaseEx)
                 {
-                    // Loguear pero no relanzar, la compensación no debe ocultar el error original
-                    Console.WriteLine($"[SAGA] Failed to release stock for product {productId}: {releaseEx.Message}");
+                    _logger.LogError(releaseEx, "[SAGA] Failed to release stock for product {ProductId}",
+                        productId);
                 }
             }
 
@@ -87,12 +107,16 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponseDto?> GetByIdAsync(int id)
     {
+        _logger.LogInformation("Fetching order {OrderId}", id);
         var order = await _repository.GetByIdAsync(id);
+        if (order is null)
+            _logger.LogWarning("Order {OrderId} not found", id);
         return order is null ? null : ToDto(order);
     }
 
     public async Task<IEnumerable<OrderResponseDto>> GetByCustomerIdAsync(int customerId)
     {
+        _logger.LogInformation("Fetching orders for customer {CustomerId}", customerId);
         var orders = await _repository.GetByCustomerIdAsync(customerId);
         return orders.Select(ToDto);
     }
