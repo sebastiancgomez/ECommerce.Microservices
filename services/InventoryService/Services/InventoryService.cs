@@ -4,6 +4,7 @@ using InventoryService.Models;
 using InventoryService.Repositories;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
+using Prometheus;
 namespace InventoryService.Services;
 
 public class InventoryService : IInventoryService
@@ -11,6 +12,14 @@ public class InventoryService : IInventoryService
     private readonly IInventoryRepository _repository;
     private readonly IProductClient _productClient;
     private readonly ILogger<InventoryService> _logger;
+    private static readonly Counter StockReservations =
+    Metrics.CreateCounter(
+        "inventory_reservations_total",
+        "Total number of stock reservations",
+        new CounterConfiguration
+        {
+            LabelNames = new[] { "product_id" }
+        });
 
     public InventoryService(IInventoryRepository repository, IProductClient productClient, ILogger<InventoryService> logger)
     {
@@ -79,9 +88,9 @@ public class InventoryService : IInventoryService
                 TotalStock = item.TotalStock
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            _logger.LogError(ex,"Failed to retrieve inventory for product {ProductId}.", productId);
+            _logger.LogError(ex, "Failed to retrieve inventory for product {ProductId}.", productId);
             throw;
         }
 
@@ -114,7 +123,7 @@ public class InventoryService : IInventoryService
 
             _logger.LogInformation("Stock updated for product {ProductId}. New stock: {Stock}",
                 dto.ProductId, item.AvailableStock);
-        }         
+        }
         catch (BrokenCircuitException ex)
         {
             _logger.LogError(ex, "[CIRCUIT BREAKER] Product service unavailable for Product {ProductId}", dto.ProductId);
@@ -149,6 +158,9 @@ public class InventoryService : IInventoryService
             item.Reserve(dto.Quantity);
 
             await _repository.UpdateAsync(item);
+            StockReservations
+                .WithLabels(dto.ProductId.ToString())
+                .Inc();
             _logger.LogInformation("Successfully reserved {Quantity} stock for product {ProductId}. Remaining stock: {Stock}", dto.Quantity, dto.ProductId, item.AvailableStock);
 
         }
@@ -162,7 +174,7 @@ public class InventoryService : IInventoryService
             _logger.LogError(ex, "[TIMEOUT] Product service timeout for Product {ProductId}", dto.ProductId);
             throw;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to reserve {Quantity} stock for product {ProductId}. Not enough stock available.", dto.Quantity, dto.ProductId);
             throw;
@@ -196,11 +208,12 @@ public class InventoryService : IInventoryService
             _logger.LogError(ex, "[TIMEOUT] Product service timeout for Product {ProductId}", dto.ProductId);
             throw;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to release {Quantity} stock for product {ProductId}. Not enough reserved stock to release.", dto.Quantity, dto.ProductId);
             throw;
         }
     }
+
 }
 
