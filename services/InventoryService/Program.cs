@@ -3,6 +3,7 @@ using InventoryService.Data;
 using InventoryService.Repositories;
 using InventoryService.Services;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -75,5 +76,8 @@ app.MapControllers();
 app.UseExceptionHandler("/error");
 
 app.MapHealthChecks("/health");
+app.UseRouting();
+app.UseHttpMetrics();
+app.MapMetrics();
 
 app.Run();

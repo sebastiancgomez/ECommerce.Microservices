@@ -1,10 +1,11 @@
 ﻿using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
-using ProductService.Middleware;
 using ProductService.Data;
+using ProductService.Middleware;
 using ProductService.Repositories;
 using ProductService.Services;
+using Prometheus;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -67,5 +68,7 @@ app.MapControllers();
 app.UseExceptionHandler("/error");
 
 app.MapHealthChecks("/health");
-
+app.UseRouting();
+app.UseHttpMetrics();
+app.MapMetrics();
 app.Run();
