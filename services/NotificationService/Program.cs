@@ -6,6 +6,7 @@ using NotificationService.Messaging;
 using NotificationService.Middleware;
 using NotificationService.Services;
 using NotificationService.Validators;
+using Prometheus;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -68,4 +69,7 @@ app.Use(async (context, next) =>
 app.MapControllers();
 app.UseExceptionHandler("/error");
 app.MapHealthChecks("/health");
+app.UseRouting();
+app.UseHttpMetrics();
+app.MapMetrics();
 app.Run();

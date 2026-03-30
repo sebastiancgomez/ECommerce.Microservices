@@ -7,6 +7,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Prometheus;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
@@ -68,4 +69,7 @@ app.UseMiddleware<ValidationLoggingMiddleware>();
 app.MapControllers();
 app.UseExceptionHandler("/error");
 app.MapHealthChecks("/health");
+app.UseRouting();
+app.UseHttpMetrics();
+app.MapMetrics();
 app.Run();
