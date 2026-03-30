@@ -7,6 +7,7 @@ public interface IInventoryService
 {
     Task CreateInventoryAsync(CreateInventoryDto dto);
     Task<InventoryDto?> GetInventoryAsync(int productId);
-    Task<bool> ReserveStockAsync(ReserveStockDto dto);
-    Task<bool> ReleaseStockAsync(ReleaseStockDto dto);
+    Task AddStockAsync(AddStockDto dto);
+    Task ReserveStockAsync(ReserveStockDto dto);
+    Task ReleaseStockAsync(ReleaseStockDto dto);
 }
