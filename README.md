@@ -189,7 +189,7 @@ docker compose up --build
 | Tool | URL |
 |------|-----|
 | API Gateway | http://localhost:5000 |
-| Swagger (services) | http://localhost:<port>/swagger |
+| Swagger (services) | http://localhost:[port]/swagger |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 | RabbitMQ UI | http://localhost:15672 |
