@@ -6,12 +6,15 @@
 ![Docker](https://img.shields.io/badge/container-docker-blue)
 ![Resilience](https://img.shields.io/badge/resilience-polly-orange)
 ![Logging](https://img.shields.io/badge/logging-serilog-purple)
+![Gateway](https://img.shields.io/badge/gateway-yarp-yellow)
+![Monitoring](https://img.shields.io/badge/monitoring-prometheus%20%7C%20grafana-blue)
 
 Backend architecture for an **e-commerce platform built with .NET 8** using a **microservices-based design**.
 
 This project demonstrates modern backend architecture practices including:
 
 - Microservices architecture
+- API Gateway with YARP
 - Domain modeling
 - Service-to-service communication with resilience patterns
 - Independent databases per service
@@ -20,9 +23,8 @@ This project demonstrates modern backend architecture practices including:
 - REST APIs with ASP.NET Core
 - Structured logging with Serilog
 - Saga compensation pattern
+- Monitoring with Prometheus and Grafana
 - Scalable distributed system design
-
-The system models a simplified e-commerce flow where customers can place orders, inventory is validated, pricing rules are applied, and services collaborate to complete the order lifecycle.
 
 ---
 
@@ -34,8 +36,11 @@ The system models a simplified e-commerce flow where customers can place orders,
 - Entity Framework Core
 - C#
 
+### API Gateway
+- YARP (Yet Another Reverse Proxy)
+
 ### Resilience
-- Polly (via `Microsoft.Extensions.Http.Resilience`)
+- Polly (`Microsoft.Extensions.Http.Resilience`)
 - Retry pattern
 - Circuit Breaker pattern
 - Saga compensation pattern
@@ -48,110 +53,61 @@ The system models a simplified e-commerce flow where customers can place orders,
 - Console sink
 - File sink (rolling daily)
 
+### Monitoring
+- Prometheus
+- Grafana
+
 ### API
 - REST
-- OpenAPI / Swagger
+- OpenAPI / Swagger (per service)
 
 ### Database
 - SQL Server
-- EF Core Migrations (applied automatically on startup)
+- EF Core Migrations (auto-applied on startup)
 
 ### Infrastructure
 - Docker
 - Docker Compose
-- Health Checks (per service, with EF Core check)
+- Health Checks
 
 ### Architecture
 - Microservices
+- API Gateway pattern
 - Domain-driven modeling
-- Interface-based HTTP clients
-- Repository and service layers
+- Repository & service layers
 
 ---
 
 # ✅ Implemented Features
 
-### Product Service
-- Create product
-- Retrieve all products
-- Retrieve product by id
-- Update product
-- Delete product (soft delete via IsActive)
-- DTO mapping
-- FluentValidation
-- Structured logging
+## Core Services
+- ProductService
+- InventoryService
+- PricingService
+- OrderService
+- CustomerService
+- NotificationService
 
-### Inventory Service
-- Create inventory item (validates product exists in ProductService)
-- Retrieve inventory by product
-- Reserve stock
-- Release stock
-- Stock validation
-- Structured logging
+## API Gateway
+- Central entry point using YARP
+- Routing to all microservices
+- Path-based routing (`/api/products`, `/api/orders`, etc.)
+- Containerized and integrated with Docker Compose
 
-### Pricing Service
-- Create pricing rules (validates product exists in ProductService)
-- Retrieve pricing rules by product
-- Rule evaluation engine
-- Dynamic price calculation
-- Support for pricing rule conditions:
-  - Minimum quantity
-  - Percentage discount
-  - Fixed discount
-  - Validity period (start / end date)
-- Structured logging
+## Messaging
+- RabbitMQ integration
+- Event: `OrderCreated`
+- Publisher: OrderService
+- Consumer: NotificationService
 
-### Order Service
-- Create order with full inter-service orchestration
-- Retrieve order by id
-- Retrieve orders by customer
-- Saga compensation pattern (auto-releases reserved stock on failure)
-- Resilient HTTP clients with retry and circuit breaker (Polly)
-- Structured logging
-
-### Customer Service
-- Create customer (with email uniqueness validation)
-- Retrieve all customers
-- Retrieve customer by id
-- Update customer
-- Delete customer
-- FluentValidation
-- Repository and service layers
-- Structured logging
-
-### Notification Service
-- Send notification (persisted in SQL Server)
-- Retrieve all sent notifications
-- FluentValidation
-- Structured logging
-
-### Infrastructure
-- Health check endpoint (`/health`) on every service
-- EF Core health check (`SELECT 1` against the database)
-- Docker Compose orchestration with `service_healthy` conditions
-- Automatic EF Core migrations on startup
-- Credentials managed via `.env` file (never committed)
-- Structured logging via Serilog on all services
-- Validation error logging via middleware
+## Monitoring
+- Prometheus container for metrics collection
+- Grafana container for visualization
+- Ready for OpenTelemetry instrumentation
 
 ---
 
 # 🏗 System Architecture
-
-The platform is composed of **multiple independent microservices**, each responsible for a specific business capability.
-
-Each microservice has:
-- Its own **database**
-- Its own **REST API**
-- Its own **health check endpoint**
-- Independent **deployment**
-- A clear **bounded context**
-
-Services communicate through **resilient HTTP APIs** using Polly.
-
----
-
-# 📊 Architecture Diagram
 
 ```mermaid
 flowchart LR
@@ -161,113 +117,63 @@ Client --> APIGateway
 APIGateway --> ProductService
 APIGateway --> OrderService
 APIGateway --> CustomerService
+APIGateway --> InventoryService
+APIGateway --> PricingService
 
 OrderService --> ProductService
 OrderService --> PricingService
 OrderService --> InventoryService
+OrderService --> RabbitMQ
+
+RabbitMQ --> NotificationService
 
 InventoryService --> ProductService
 PricingService --> ProductService
-
-InventoryService --> InventoryDB[(InventoryDB)]
-PricingService --> PricingDB[(PricingDB)]
-ProductService --> ProductDB[(ProductDB)]
-OrderService --> OrderDB[(OrderDB)]
-CustomerService --> CustomerDB[(CustomerDB)]
-NotificationService --> NotificationDB[(NotificationDB)]
 ```
-
----
-
-# ☁️ Microservices
-
-| Service | Responsibility | Status |
-|---|---|---|
-| ProductService | Product catalog management | ✅ Implemented |
-| OrderService | Order creation and lifecycle | ✅ Implemented |
-| CustomerService | Customer management | ✅ Implemented |
-| NotificationService | Notifications and messaging | ✅ Implemented |
-| InventoryService | Product stock validation and reservation | ✅ Implemented |
-| PricingService | Pricing rules and price calculation | ✅ Implemented |
-| PaymentService | Payment processing | 💤 Planned |
-| API Gateway | Single entry point for clients | 💤 Planned |
-
-Each service is designed to evolve **independently**.
 
 ---
 
 # 📦 Project Structure
 
 ```
-services
+ApiGateway/
+services/
  ├─ ProductService
  ├─ OrderService
  ├─ CustomerService
  ├─ NotificationService
  ├─ InventoryService
  ├─ PricingService
- └─ PaymentService (planned)
-```
-
-Typical structure inside each service:
-
-```
-Clients
-Controllers
-Data
-DTOs
-Middleware
-Migrations
-Models
-Repositories
-Services
-Validators
+monitoring/
+ ├─ prometheus.yml
+docker-compose.yml
 ```
 
 ---
 
 # 🔌 Service Ports
 
-| Service | HTTP | Database |
-|---|---|---|
-| ProductService | 5100 | ProductDb |
-| OrderService | 5200 | OrderDb |
-| CustomerService | 5300 | CustomerDb |
-| NotificationService | 5400 | NotificationDb |
-| InventoryService | 5600 | InventoryDb |
-| PricingService | 5700 | PricingDb |
-| API Gateway | 5000 | — |
-
-All services use **SQL Server running in Docker (port 1433)**.
-
----
-
-# 🔐 Security & Configuration
-
-Credentials and sensitive configuration are **never committed to the repository**.
-
-All environment variables are managed via a `.env` file:
-
-```bash
-cp .env.example .env
-# Edit .env with your credentials
-```
-
-The `.env.example` file is versioned as a reference template with placeholder values. The `.env` file is listed in `.gitignore`.
+| Service | Port |
+|--------|------|
+| API Gateway | 5000 |
+| ProductService | 5100 |
+| OrderService | 5200 |
+| CustomerService | 5300 |
+| NotificationService | 5400 |
+| InventoryService | 5600 |
+| PricingService | 5700 |
+| Prometheus | 9090 |
+| Grafana | 3000 |
+| RabbitMQ | 5672 / 15672 |
 
 ---
 
 # 🐳 Running the Project
 
-## Prerequisites
-- Docker Desktop
-- .NET 8 SDK (for local development without Docker)
-
 ## 1. Configure environment variables
 
 ```bash
 cp .env.example .env
-# Edit .env with your credentials
 ```
 
 ## 2. Start all services
@@ -276,252 +182,113 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Docker Compose will:
-1. Start SQL Server and wait until it is **healthy**
-2. Start ProductService and wait until it is **healthy**
-3. Start InventoryService and PricingService (depend on ProductService being healthy)
-4. Start OrderService once all dependencies are healthy
+---
 
-Swagger will be available at:
-```
-http://localhost:<port>/swagger
-```
+# 🌐 Access Points
 
-## 3. Health checks
-
-Every service exposes a health endpoint:
-```
-GET http://localhost:<port>/health
-```
-
-## Useful commands
-
-```bash
-# View logs of a specific service
-docker compose logs productservice
-
-# Follow logs in real time
-docker compose logs -f
-
-# Check status of all containers
-docker compose ps
-
-# Stop all services
-docker compose down
-
-# Stop and remove volumes (resets databases)
-docker compose down -v
-```
+| Tool | URL |
+|------|-----|
+| API Gateway | http://localhost:5000 |
+| Swagger (services) | http://localhost:<port>/swagger |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 |
+| RabbitMQ UI | http://localhost:15672 |
 
 ---
 
-# 🔄 Order Creation Sequence
+# 🔍 Observability
+
+## Prometheus
+- Collects metrics from services
+- Targets configured via `prometheus.yml`
+
+## Grafana
+- Visualizes system metrics
+- Connects to Prometheus as data source
+
+## Current State
+- Infrastructure ready ✅
+- Metrics instrumentation (OpenTelemetry) → pending
+
+---
+
+# 🔄 Order Flow
 
 ```mermaid
 sequenceDiagram
 
-Client->>OrderService: POST /orders
+Client->>APIGateway: POST /api/orders
+APIGateway->>OrderService: Forward request
 
-OrderService->>ProductService: Get product information
-ProductService-->>OrderService: Product details
-
+OrderService->>ProductService: Get product
 OrderService->>PricingService: Calculate price
-PricingService-->>OrderService: Final price
-
-OrderService->>InventoryService: Validate stock
-InventoryService-->>OrderService: Stock available
-
 OrderService->>InventoryService: Reserve stock
-InventoryService-->>OrderService: Reservation confirmed
 
-OrderService->>OrderDB: Persist order
+OrderService->>RabbitMQ: Publish OrderCreated
 
-OrderService-->>Client: Order Created
+RabbitMQ->>NotificationService: Consume event
+
+OrderService-->>Client: Order created
 ```
 
 ---
 
-# ⚔️ Saga Compensation Pattern
+# ⚔️ Saga Pattern
 
-When order creation fails mid-flow (e.g. insufficient stock for one item), the system automatically **releases all previously reserved stock**:
-
-```mermaid
-sequenceDiagram
-
-OrderService->>InventoryService: Reserve product 1 ✅
-OrderService->>InventoryService: Reserve product 2 ✅
-OrderService->>InventoryService: Reserve product 3 ❌ not enough stock
-
-Note over OrderService: Saga compensation triggered
-
-OrderService->>InventoryService: Release product 1
-OrderService->>InventoryService: Release product 2
-
-OrderService-->>Client: 400 Bad Request
-```
+- Ensures consistency across services
+- Automatically compensates failed operations
 
 ---
 
-# 🛡 Resilience Patterns
+# 🛡 Resilience
 
-Inter-service HTTP communication is protected with **Polly** via `Microsoft.Extensions.Http.Resilience`.
+- Retry
+- Circuit Breaker
+- Timeout handling
 
-Each HTTP client is configured with:
-
-- **Retry** — up to 3 automatic retries with a 2-second delay between attempts
-- **Circuit Breaker** — opens after 50% failure rate over a 30-second window (minimum 5 requests)
-
-```csharp
-builder.Services.AddHttpClient<IInventoryClient, InventoryClient>(client =>
-{
-    client.BaseAddress = new Uri("http://inventoryservice:8080");
-})
-.AddStandardResilienceHandler(options =>
-{
-    options.Retry.MaxRetryAttempts = 3;
-    options.Retry.Delay = TimeSpan.FromSeconds(2);
-    options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-    options.CircuitBreaker.FailureRatio = 0.5;
-    options.CircuitBreaker.MinimumThroughput = 5;
-});
-```
+Implemented using Polly.
 
 ---
 
-# 📋 Structured Logging
+# 📋 Logging
 
-All services use **Serilog** for structured logging with console and file sinks.
-
-Log levels used:
-- `INF` — successful operations (order created, stock reserved, product updated)
-- `WRN` — business rule violations (product not found, not enough stock, validation errors)
-- `ERR` — unexpected failures and Saga compensation events
-
-Example output:
-```
-[10:23:01 INF] Creating order for customer 1 with 2 items
-[10:23:01 INF] Reserved 2 units of product 1
-[10:23:01 WRN] Not enough stock for product 2, quantity requested 5
-[10:23:01 ERR] Order creation failed for customer 1, starting Saga compensation
-[10:23:01 INF] [SAGA] Released 2 units of product 1
-```
+All services use structured logging with Serilog.
 
 ---
 
-# 📡 Service Communication Contracts
+# 📡 API Gateway Routes
 
-### Product Service
-```
-GET    /api/products
-GET    /api/products/{id}
-POST   /api/products
-PUT    /api/products/{id}
-DELETE /api/products/{id}
-```
-
-### Pricing Service
-```
-POST /api/pricing
-POST /api/pricing/calculate
-```
-
-### Inventory Service
-```
-GET  /api/inventory/{productId}
-POST /api/inventory
-POST /api/inventory/reserve
-POST /api/inventory/release
-```
-
-### Order Service
-```
-POST /api/order
-GET  /api/order/{id}
-GET  /api/order/customer/{customerId}
-```
-
-### Customer Service
-```
-GET    /api/customer
-GET    /api/customer/{id}
-POST   /api/customer
-PUT    /api/customer/{id}
-DELETE /api/customer/{id}
-```
-
-### Notification Service
-```
-GET  /api/notification
-POST /api/notification
-```
-
----
-
-# 📚 Domain Concepts
-
-## Order Lifecycle
-
-```
-Created → Confirmed → PaymentProcessing → Paid → Cancelled / Expired
-```
-
-Orders maintain a **status history** to track transitions between states.
-
----
-
-# 🧠 Concepts Demonstrated
-
-- Microservices architecture
-- Domain-driven modeling
-- Interface-based HTTP clients
-- Resilient service communication (Polly — retry + circuit breaker)
-- Saga compensation pattern for distributed transactions
-- Health checks per service with Docker Compose orchestration
-- Independent databases per service
-- Clean entity design
-- Repository and service layers
-- FluentValidation with middleware logging
-- Structured logging with Serilog
-- Containerized infrastructure
-- Credentials management with `.env`
-- Automatic EF Core migrations on startup
+| Route | Service |
+|------|--------|
+| /api/products | ProductService |
+| /api/orders | OrderService |
+| /api/customers | CustomerService |
+| /api/inventory | InventoryService |
+| /api/pricing | PricingService |
 
 ---
 
 # 🚧 Future Improvements
 
-- API Gateway (YARP / Ocelot)
-- Event-driven architecture
-- Message broker (RabbitMQ / Kafka)
-- Full Saga orchestration with state machine
-- Observability with OpenTelemetry
-- Authentication with JWT / Identity
-- Container orchestration with Kubernetes
-- Centralized configuration
+- OpenTelemetry metrics
+- Distributed tracing (Jaeger)
+- Authentication (JWT)
+- Kubernetes deployment
+- Centralized logging (ELK)
+- Dashboard templates in Grafana
 
 ---
 
 # 📈 Development Status
 
-Implemented:
-- Product catalog service ✅
-- Inventory reservation system ✅
-- Pricing rule engine ✅
-- Order service with full inter-service orchestration ✅
-- Customer service ✅
-- Notification service ✅
-- Resilient HTTP clients with Polly ✅
-- Saga compensation pattern ✅
-- Health checks and Docker Compose orchestration ✅
-- Structured logging with Serilog ✅
-- FluentValidation on all services ✅
-- Secure credentials management ✅
-
-Next milestones:
-- API Gateway (YARP)
-- Event-driven communication with RabbitMQ
-- JWT Authentication
-- Kubernetes deployment
+✔ Microservices architecture  
+✔ API Gateway (YARP)  
+✔ RabbitMQ messaging  
+✔ Saga pattern  
+✔ Dockerized environment  
+✔ Health checks  
+✔ Structured logging  
+✔ Monitoring infrastructure  
 
 ---
 
@@ -531,7 +298,6 @@ Next milestones:
 
 Backend Engineer specialized in:
 - .NET
-- Java
 - Microservices
 - Cloud architecture
 - Distributed systems
