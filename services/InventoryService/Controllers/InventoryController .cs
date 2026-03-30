@@ -1,7 +1,6 @@
 ﻿using InventoryService.DTOs;
 using InventoryService.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Polly.CircuitBreaker;
 
 namespace InventoryService.Controllers;
@@ -10,6 +9,7 @@ namespace InventoryService.Controllers;
 [Route("api/[controller]")]
 public class InventoryController : ControllerBase
 {
+    const string InvalidQuantityMessage = "Quantity must be greater than zero";
     private readonly IInventoryService _inventoryService;
 
     public InventoryController(IInventoryService inventoryService)
@@ -21,20 +21,42 @@ public class InventoryController : ControllerBase
     {
         try
         {
+            if (dto.Stock <= 0)
+                return BadRequest(InvalidQuantityMessage);
             await _inventoryService.CreateInventoryAsync(dto);
             return Ok();
         }
         catch (BrokenCircuitException)
         {
-            return StatusCode(503, new
-            {
-                error = "SERVICE_UNAVAILABLE",
-                message = "Product service is currently unavailable. Please try again later."
-            });
+            return ServiceUnavailable();
         }
         catch (InvalidOperationException ex)
         {
             return NotFound(ex.Message);
+        }
+    }
+
+    [HttpPost("add")]
+    public async Task<IActionResult> AddStock([FromBody] AddStockDto dto)
+    {
+        try
+        {
+            if (dto.Quantity <= 0)
+                return BadRequest(InvalidQuantityMessage);
+            await _inventoryService.AddStockAsync(dto);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (BrokenCircuitException)
+        {
+            return ServiceUnavailable();
         }
     }
 
@@ -52,22 +74,57 @@ public class InventoryController : ControllerBase
     [HttpPost("reserve")]
     public async Task<IActionResult> Reserve(ReserveStockDto dto)
     {
-        var result = await _inventoryService.ReserveStockAsync(dto);
+        try
+        {
+            if (dto.Quantity <= 0)
+                return BadRequest(InvalidQuantityMessage);
+            await _inventoryService.ReserveStockAsync(dto);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (BrokenCircuitException)
+        {
+            return ServiceUnavailable();
+        }
 
-        if (!result)
-            return Conflict("Not enough stock");
 
-        return Ok();
     }
 
     [HttpPost("release")]
     public async Task<IActionResult> Release(ReleaseStockDto dto)
     {
-        var result = await _inventoryService.ReleaseStockAsync(dto);
-
-        if (!result)
-            return NotFound();
-
-        return Ok();
+        try
+        {
+            if (dto.Quantity <= 0)
+                return BadRequest(InvalidQuantityMessage);
+            await   _inventoryService.ReleaseStockAsync(dto);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (BrokenCircuitException)
+        {
+            return ServiceUnavailable();
+        }
     }
+
+    private IActionResult ServiceUnavailable() =>
+    StatusCode(503, new
+    {
+        error = "SERVICE_UNAVAILABLE",
+        message = "Product service is currently unavailable."
+    });
 }
