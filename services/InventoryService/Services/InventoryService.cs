@@ -2,6 +2,8 @@
 using InventoryService.DTOs;
 using InventoryService.Models;
 using InventoryService.Repositories;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 namespace InventoryService.Services;
 
 public class InventoryService : IInventoryService
@@ -19,17 +21,41 @@ public class InventoryService : IInventoryService
 
     public async Task CreateInventoryAsync(CreateInventoryDto dto)
     {
-        var productExists = await _productClient.ExistsAsync(dto.ProductId);
-        if (!productExists)
+        try
         {
-            _logger.LogWarning("Attempted to create inventory for non-existent product {ProductId}", dto.ProductId);
-            throw new InvalidOperationException($"Product {dto.ProductId} does not exist.");
+            var productExists = await _productClient.ExistsAsync(dto.ProductId);
+            if (!productExists)
+            {
+                _logger.LogWarning("Attempted to create inventory for non-existent product {ProductId}", dto.ProductId);
+                throw new InvalidOperationException($"Product {dto.ProductId} does not exist.");
+            }
+
+            var item = new InventoryItem(dto.ProductId, dto.Stock);
+
+            await _repository.AddAsync(item);
+            _logger.LogInformation("Created inventory for product {ProductId} with stock {Stock}", dto.ProductId, dto.Stock);
         }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogError(ex, "[CIRCUIT BREAKER] Circuit is open, service unavailable. Product {ProductId} with stock {Stock}",
+                dto.ProductId, dto.Stock);            
 
-        var item = new InventoryItem(dto.ProductId, dto.Stock);
+            throw; // el controlador lo captura y retorna 503
+        }
+        catch (TimeoutRejectedException ex)
+        {
+            _logger.LogError(ex, "[TIMEOUT] Service timed out. Product {ProductId} with stock {Stock}",
+                dto.ProductId, dto.Stock);
 
-        await _repository.AddAsync(item);
-        _logger.LogInformation("Created inventory for product {ProductId} with stock {Stock}", dto.ProductId, dto.Stock);
+            throw;
+        }
+        catch
+        {
+            _logger.LogError("Inventory creation failed for product {ProductId} with stock {Stock}",
+                dto.ProductId, dto.Stock);
+
+            throw;
+        }
     }
 
     public async Task<InventoryDto?> GetInventoryAsync(int productId)

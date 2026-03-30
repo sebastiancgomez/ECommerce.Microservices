@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OrderService.Clients;
 using OrderService.Data;
+using OrderService.Messaging;
 using OrderService.Repositories;
 using OrderService.Services;
 using Serilog;
@@ -22,6 +23,7 @@ builder.Host.UseSerilog();
 // DbContext
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<IEventPublisher, RabbitMqEventPublisher>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService.Services.OrderService>();
 builder.Services.AddControllers();
