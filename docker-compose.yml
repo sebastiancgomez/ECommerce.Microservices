@@ -150,6 +150,12 @@
       - "5200:8080"
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s 
 
   notificationservice:
     build:
@@ -177,6 +183,26 @@
       timeout: 5s
       retries: 5
       start_period: 15s 
+
+  apigateway:
+    build:
+        context: .
+        dockerfile: ApiGateway/Dockerfile
+    ports:
+      - "5000:8080"
+    networks:
+      - ecommerce-network
+    depends_on:
+        productservice:
+            condition: service_healthy
+        inventoryservice:
+            condition: service_healthy
+        orderservice:
+            condition: service_healthy
+        pricingservice:
+            condition: service_healthy
+        customerservice:
+            condition: service_healthy
 
 networks:
   ecommerce-network:

@@ -28,7 +28,7 @@ public class OrderCreatedConsumer : BackgroundService
         _logger = logger;
     }
 
-    public override Task StartAsync(CancellationToken cancellationToken)
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
         var factory = new ConnectionFactory
         {
@@ -39,21 +39,43 @@ public class OrderCreatedConsumer : BackgroundService
             DispatchConsumersAsync = true
         };
 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        const int maxRetries = 5;
+        var delay = TimeSpan.FromSeconds(5);
 
-        _channel.QueueDeclare(
-            queue: QueueName,
-            durable: true,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
+        for (int i = 1; i <= maxRetries; i++)
+        {
+            try
+            {
+                _logger.LogInformation("[RabbitMQ] Attempt {Attempt} to connect...", i);
 
-        _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
 
-        _logger.LogInformation("[RabbitMQ] Consumer connected, listening on queue '{Queue}'", QueueName);
+                _channel.QueueDeclare(
+                    queue: QueueName,
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
 
-        return base.StartAsync(cancellationToken);
+                _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+
+                _logger.LogInformation("[RabbitMQ] Connected successfully");
+
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[RabbitMQ] Connection attempt {Attempt} failed", i);
+
+                if (i == maxRetries)
+                    throw;
+
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+
+        await base.StartAsync(cancellationToken);
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -66,7 +88,7 @@ public class OrderCreatedConsumer : BackgroundService
             var json = Encoding.UTF8.GetString(body);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-            _logger.LogInformation("[RabbitMQ] Message received on '{Queue}'", QueueName);
+            _logger.LogInformation("[RabbitMQ] Message received — DeliveryTag={Tag}", ea.DeliveryTag);
 
             try
             {

@@ -36,6 +36,18 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    var requestId = context.Request.Headers["X-Request-Id"].FirstOrDefault();
+
+    if (!string.IsNullOrEmpty(requestId))
+    {
+        context.Items["RequestId"] = requestId;
+    }
+
+    await next();
+});
+
 // Ejecutar migraciones automáticamente
 using (var scope = app.Services.CreateScope())
 {

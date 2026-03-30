@@ -38,6 +38,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<NotificationDbContext>();
@@ -52,6 +54,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthorization();
 app.UseMiddleware<ValidationLoggingMiddleware>();
+app.Use(async (context, next) =>
+{
+    var requestId = context.Request.Headers["X-Request-Id"].FirstOrDefault();
+
+    if (!string.IsNullOrEmpty(requestId))
+    {
+        context.Items["RequestId"] = requestId;
+    }
+
+    await next();
+});
 app.MapControllers();
 app.UseExceptionHandler("/error");
 app.MapHealthChecks("/health");
