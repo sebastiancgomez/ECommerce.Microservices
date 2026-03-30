@@ -1,7 +1,11 @@
 ﻿using OrderService.Clients;
 using OrderService.DTOs;
+using OrderService.Events;
+using OrderService.Messaging;
 using OrderService.Models;
 using OrderService.Repositories;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 
 namespace OrderService.Services;
 
@@ -11,6 +15,7 @@ public class OrderService : IOrderService
     private readonly IProductClient _productClient;
     private readonly IInventoryClient _inventoryClient;
     private readonly IPricingClient _pricingClient;
+    private readonly IEventPublisher _eventPublisher;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
@@ -18,12 +23,14 @@ public class OrderService : IOrderService
         IProductClient productClient,
         IInventoryClient inventoryClient,
         IPricingClient pricingClient,
+        IEventPublisher eventPublisher,
         ILogger<OrderService> logger)
     {
         _repository = repository;
         _productClient = productClient;
         _inventoryClient = inventoryClient;
         _pricingClient = pricingClient;
+        _eventPublisher = eventPublisher;
         _logger = logger;
     }
 
@@ -78,30 +85,42 @@ public class OrderService : IOrderService
 
             order.ChangeStatus(OrderStatus.Confirmed);
             await _repository.AddAsync(order);
+
+            var orderCreatedEvent = new OrderCreatedEvent
+            {
+                OrderId = order.Id,
+                CustomerId = order.CustomerId,
+                Total = order.Total,
+                CreatedAt = order.CreatedAt,
+                Items = order.Items.Select(i => new OrderCreatedEventItem
+                {
+                    ProductId = i.ProductId,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice
+                }).ToList()
+            };
+            _eventPublisher.Publish(orderCreatedEvent, "order.created");
             _logger.LogInformation("Order {OrderId} created successfully for customer {CustomerId} with total {Total}",
                 order.Id, order.CustomerId, order.Total);
 
             return ToDto(order);
         }
+        catch (TimeoutRejectedException ex)
+        {
+            _logger.LogError(ex, "[TIMEOUT] Service timed out. Customer {CustomerId}", dto.CustomerId);
+
+            await CompensateAsync(reservedItems);
+
+            throw;
+        }
         catch
         {
-            // SAGA COMPENSACIÓN: liberar todo lo que ya se reservó
-            foreach (var (productId, quantity) in reservedItems)
-            {
-                try
-                {
-                    await _inventoryClient.Release(productId, quantity);
-                    _logger.LogInformation("[SAGA] Released {Quantity} units of product {ProductId}",
-                        quantity, productId);
-                }
-                catch (Exception releaseEx)
-                {
-                    _logger.LogError(releaseEx, "[SAGA] Failed to release stock for product {ProductId}",
-                        productId);
-                }
-            }
+            _logger.LogError("Order creation failed for customer {CustomerId}, starting Saga compensation",
+                dto.CustomerId);
 
-            throw; // relanza la excepción original
+            await CompensateAsync(reservedItems);
+
+            throw;
         }
     }
 
@@ -119,6 +138,23 @@ public class OrderService : IOrderService
         _logger.LogInformation("Fetching orders for customer {CustomerId}", customerId);
         var orders = await _repository.GetByCustomerIdAsync(customerId);
         return orders.Select(ToDto);
+    }
+    private async Task CompensateAsync(List<(int ProductId, int Quantity)> reservedItems)
+    {
+        foreach (var (productId, quantity) in reservedItems)
+        {
+            try
+            {
+                await _inventoryClient.Release(productId, quantity);
+                _logger.LogInformation("[SAGA] Released {Quantity} units of product {ProductId}",
+                    quantity, productId);
+            }
+            catch (Exception releaseEx)
+            {
+                _logger.LogError(releaseEx, "[SAGA] Failed to release stock for product {ProductId}",
+                    productId);
+            }
+        }
     }
 
     private static OrderResponseDto ToDto(Order order) => new()

@@ -1,4 +1,6 @@
-﻿using PricingService.Clients;
+﻿using Polly.CircuitBreaker;
+using Polly.Timeout;
+using PricingService.Clients;
 using PricingService.DTOs;
 using PricingService.Models;
 using PricingService.Repositories;
@@ -22,24 +24,48 @@ public class PricingService : IPricingService
     {
         _logger.LogInformation("Creating pricing rule for product {ProductId} with min quantity {MinQuantity}, Discount Percentage {DiscountPercentage}",
             dto.ProductId, dto.MinQuantity, dto.DiscountPercentage);
-        var productExists = await _productClient.ExistsAsync(dto.ProductId);
-        if (!productExists)
+        try
         {
-            _logger.LogWarning("Product {ProductId} not found", dto.ProductId);
-            throw new InvalidOperationException($"Product {dto.ProductId} does not exist.");
+            var productExists = await _productClient.ExistsAsync(dto.ProductId);
+            if (!productExists)
+            {
+                _logger.LogWarning("Product {ProductId} not found", dto.ProductId);
+                throw new InvalidOperationException($"Product {dto.ProductId} does not exist.");
+            }
+
+            var rule = new PricingRule(
+                dto.ProductId,
+                dto.MinQuantity,
+                dto.DiscountPercentage,
+                dto.StartDate,
+                dto.EndDate
+            );
+
+            await _repository.AddAsync(rule);
+            _logger.LogInformation("Pricing Rule {RuleId} created successfully for product {ProductId}",
+                    rule.Id, rule.ProductId);
         }
+        catch (BrokenCircuitException ex)
+        {
+            _logger.LogError(ex, "[CIRCUIT BREAKER] Circuit is open, service unavailable. Product {ProductId}",
+                dto.ProductId);
 
-        var rule = new PricingRule(
-            dto.ProductId,
-            dto.MinQuantity,
-            dto.DiscountPercentage,
-            dto.StartDate,
-            dto.EndDate
-        );
+            throw; // el controlador lo captura y retorna 503
+        }
+        catch (TimeoutRejectedException ex)
+        {
+            _logger.LogError(ex, "[TIMEOUT] Service timed out. Product {ProductId}",
+                dto.ProductId);
 
-        await _repository.AddAsync(rule);
-        _logger.LogInformation("Pricing Rule {RuleId} created successfully for product {ProductId}",
-                rule.Id, rule.ProductId);
+            throw;
+        }
+        catch
+        {
+            _logger.LogError("Pricing Rule creation failed for product {ProductId}",
+                dto.ProductId);
+
+            throw;
+        }
     }
 
     public async Task<PricingResultDto> CalculatePriceAsync(int productId, int quantity, decimal basePrice)

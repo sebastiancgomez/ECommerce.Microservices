@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OrderService.DTOs;
 using OrderService.Services;
+using Polly.Timeout;
 
 namespace OrderService.Controllers;
 
@@ -22,6 +23,14 @@ public class OrderController : ControllerBase
         {
             var order = await _orderService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+        }
+        catch (TimeoutRejectedException)
+        {
+            return StatusCode(503, new
+            {
+                error = "SERVICE_TIMEOUT",
+                message = "A service took too long to respond. Please try again later."
+            });
         }
         catch (InvalidOperationException ex)
         {

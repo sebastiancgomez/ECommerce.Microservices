@@ -1,7 +1,8 @@
-﻿using InventoryService.Services;
-using InventoryService.DTOs;
+﻿using InventoryService.DTOs;
+using InventoryService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Polly.CircuitBreaker;
 
 namespace InventoryService.Controllers;
 
@@ -22,6 +23,14 @@ public class InventoryController : ControllerBase
         {
             await _inventoryService.CreateInventoryAsync(dto);
             return Ok();
+        }
+        catch (BrokenCircuitException)
+        {
+            return StatusCode(503, new
+            {
+                error = "SERVICE_UNAVAILABLE",
+                message = "Product service is currently unavailable. Please try again later."
+            });
         }
         catch (InvalidOperationException ex)
         {

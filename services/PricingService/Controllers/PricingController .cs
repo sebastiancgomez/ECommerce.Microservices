@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Polly.CircuitBreaker;
 using PricingService.Data;
 using PricingService.DTOs;
 using PricingService.Models;
@@ -24,6 +25,14 @@ public class PricingController : ControllerBase
         {
             await _pricingService.CreateRuleAsync(dto);
             return Ok();
+        }
+        catch (BrokenCircuitException)
+        {
+            return StatusCode(503, new
+            {
+                error = "SERVICE_UNAVAILABLE",
+                message = "Product service is currently unavailable. Please try again later."
+            });
         }
         catch (InvalidOperationException ex)
         {

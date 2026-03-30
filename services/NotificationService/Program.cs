@@ -2,6 +2,7 @@
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Data;
+using NotificationService.Messaging;
 using NotificationService.Middleware;
 using NotificationService.Services;
 using NotificationService.Validators;
@@ -24,8 +25,9 @@ builder.Host.UseSerilog();
 builder.Services.AddDbContext<NotificationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<INotificationSender, NotificationSender>(); 
+builder.Services.AddScoped<INotificationSender, NotificationSender>();
 
+builder.Services.AddHostedService<OrderCreatedConsumer>();
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<SendNotificationValidator>();
