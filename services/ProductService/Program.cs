@@ -1,6 +1,8 @@
 ﻿using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using ProductService.Data;
 using ProductService.Middleware;
 using ProductService.Repositories;
@@ -35,7 +37,21 @@ builder.Services.AddScoped<IProductService, ProductService.Services.ProductServi
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
 
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter();
+    })
+    .ConfigureResource(resource =>
+        resource.AddService(builder.Environment.ApplicationName));
+
 var app = builder.Build();
+app.MapPrometheusScrapingEndpoint();
+
 
 app.Use(async (context, next) =>
 {
@@ -65,10 +81,11 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 app.UseMiddleware<ValidationLoggingMiddleware>();
 app.MapControllers();
+app.Map("/error", () => Results.Problem());
 app.UseExceptionHandler("/error");
 
 app.MapHealthChecks("/health");
 app.UseRouting();
-app.UseHttpMetrics();
-app.MapMetrics();
+/*app.UseHttpMetrics();
+app.MapMetrics();*/
 app.Run();

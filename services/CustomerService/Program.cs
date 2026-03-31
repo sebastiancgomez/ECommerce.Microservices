@@ -6,8 +6,10 @@ using CustomerService.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Prometheus;
+using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
@@ -38,7 +40,20 @@ builder.Services.AddHealthChecks()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter(); 
+    })
+    .ConfigureResource(resource =>
+        resource.AddService(builder.Environment.ApplicationName));
+
 var app = builder.Build();
+app.MapPrometheusScrapingEndpoint();
 
 app.Use(async (context, next) =>
 {
@@ -67,9 +82,12 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 app.UseMiddleware<ValidationLoggingMiddleware>();
 app.MapControllers();
+
+app.Map("/error", () => Results.Problem());
 app.UseExceptionHandler("/error");
+
 app.MapHealthChecks("/health");
 app.UseRouting();
-app.UseHttpMetrics();
-app.MapMetrics();
+/*app.UseHttpMetrics();
+app.MapMetrics();*/
 app.Run();

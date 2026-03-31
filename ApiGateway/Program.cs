@@ -1,3 +1,6 @@
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // YARP
@@ -9,7 +12,21 @@ builder.Services
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter();
+    })
+    .ConfigureResource(resource =>
+        resource.AddService(builder.Environment.ApplicationName));
+
 var app = builder.Build();
+
+app.MapPrometheusScrapingEndpoint();
 
 // Middleware base
 app.UseRouting();

@@ -1,0 +1,70 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Requests per second",
+      "targets": [
+        {
+          "expr": "rate(http_server_request_duration_seconds_count[1m])"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Average latency (seconds)",
+      "targets": [
+        {
+          "expr": "rate(http_server_request_duration_seconds_sum[1m]) / rate(http_server_request_duration_seconds_count[1m])"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "P95 latency",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_server_request_duration_seconds_bucket[5m]))"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Error rate (5xx)",
+      "targets": [
+        {
+          "expr": "rate(http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[1m])"
+        }
+      ],
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ],
+  "schemaVersion": 38,
+  "title": "ECommerce Microservices Dashboard",
+  "version": 1
+}
