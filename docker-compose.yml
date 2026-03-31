@@ -215,10 +215,14 @@
       - ecommerce-network
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
     container_name: ecommerce-grafana
     ports:
       - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
     networks:
       - ecommerce-network
 
@@ -227,3 +231,4 @@ networks:
 
 volumes:
   sql_data:
+  grafana_data:
