@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OrderService.Clients;
 using OrderService.Data;
 using OrderService.Messaging;
@@ -70,7 +72,20 @@ builder.Services.AddHttpClient<IPricingClient, PricingClient>(client =>
     options.CircuitBreaker.MinimumThroughput = 5;
 });
 
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter();
+    })
+    .ConfigureResource(resource =>
+        resource.AddService(builder.Environment.ApplicationName));
+
 var app = builder.Build();
+app.MapPrometheusScrapingEndpoint();
 
 app.Use(async (context, next) =>
 {
@@ -101,10 +116,11 @@ app.UseAuthorization();
 app.MapControllers();
 
 
+app.Map("/error", () => Results.Problem());
 app.UseExceptionHandler("/error");
 
 app.MapHealthChecks("/health");
 app.UseRouting();
-app.UseHttpMetrics();
-app.MapMetrics();
+/*app.UseHttpMetrics();
+app.MapMetrics();*/
 app.Run();

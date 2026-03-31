@@ -6,6 +6,8 @@ using NotificationService.Messaging;
 using NotificationService.Middleware;
 using NotificationService.Services;
 using NotificationService.Validators;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Prometheus;
 using Serilog;
 
@@ -37,9 +39,20 @@ builder.Services.AddHealthChecks()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddPrometheusExporter();
+    })
+    .ConfigureResource(resource =>
+        resource.AddService(builder.Environment.ApplicationName));
+
 var app = builder.Build();
-
-
+app.MapPrometheusScrapingEndpoint();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -67,9 +80,10 @@ app.Use(async (context, next) =>
     await next();
 });
 app.MapControllers();
+app.Map("/error", () => Results.Problem());
 app.UseExceptionHandler("/error");
 app.MapHealthChecks("/health");
 app.UseRouting();
-app.UseHttpMetrics();
-app.MapMetrics();
+/*app.UseHttpMetrics();
+app.MapMetrics();*/
 app.Run();
