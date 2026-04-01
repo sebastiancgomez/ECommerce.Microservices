@@ -8,6 +8,7 @@
 ![Logging](https://img.shields.io/badge/logging-serilog-purple)
 ![Gateway](https://img.shields.io/badge/gateway-yarp-yellow)
 ![Monitoring](https://img.shields.io/badge/monitoring-prometheus%20%7C%20grafana-blue)
+![Messaging](https://img.shields.io/badge/messaging-rabbitmq-orange)
 
 Backend architecture for an **e-commerce platform built with .NET 8** using a **microservices-based design**.
 
@@ -16,7 +17,7 @@ This project demonstrates modern backend architecture practices including:
 - Microservices architecture
 - API Gateway with YARP
 - Domain modeling
-- Service-to-service communication with resilience patterns
+- Service-to-service communication (HTTP + Messaging)
 - Independent databases per service
 - Clean domain entities
 - Dockerized infrastructure with health checks
@@ -57,6 +58,9 @@ This project demonstrates modern backend architecture practices including:
 - Prometheus
 - Grafana
 
+### Messaging
+- RabbitMQ
+
 ### API
 - REST
 - OpenAPI / Swagger (per service)
@@ -87,6 +91,19 @@ This project demonstrates modern backend architecture practices including:
 - OrderService
 - CustomerService
 - NotificationService
+- PaymentService ✅ (NEW)
+
+## Payment Service
+- Handles payment processing per order
+- Supports multiple currencies (USD, COP, EUR)
+- Simulated payment logic (success/failure based on amount)
+- Uses EF Core with dedicated database
+- Implements:
+  - DTOs
+  - Mapping layer (ToEntity / ToDto)
+  - Repository pattern
+  - Service layer
+  - FluentValidation
 
 ## API Gateway
 - Central entry point using YARP
@@ -119,10 +136,12 @@ APIGateway --> OrderService
 APIGateway --> CustomerService
 APIGateway --> InventoryService
 APIGateway --> PricingService
+APIGateway --> PaymentService
 
 OrderService --> ProductService
 OrderService --> PricingService
 OrderService --> InventoryService
+OrderService --> PaymentService
 OrderService --> RabbitMQ
 
 RabbitMQ --> NotificationService
@@ -144,8 +163,12 @@ services/
  ├─ NotificationService
  ├─ InventoryService
  ├─ PricingService
+ ├─ PaymentService
 monitoring/
  ├─ prometheus.yml
+ ├─ grafana/
+      ├─ dashboards/
+      ├─ provisioning/
 docker-compose.yml
 ```
 
@@ -160,6 +183,7 @@ docker-compose.yml
 | OrderService | 5200 |
 | CustomerService | 5300 |
 | NotificationService | 5400 |
+| PaymentService | 5500 |
 | InventoryService | 5600 |
 | PricingService | 5700 |
 | Prometheus | 9090 |
@@ -204,7 +228,7 @@ docker compose up --build
 
 ## Grafana
 - Visualizes system metrics
-- Connects to Prometheus as data source
+- Dashboards provisioned automatically
 
 ## Current State
 - Infrastructure ready ✅
@@ -212,7 +236,7 @@ docker compose up --build
 
 ---
 
-# 🔄 Order Flow
+# 🔄 Order + Payment Flow
 
 ```mermaid
 sequenceDiagram
@@ -224,11 +248,13 @@ OrderService->>ProductService: Get product
 OrderService->>PricingService: Calculate price
 OrderService->>InventoryService: Reserve stock
 
+OrderService->>PaymentService: Create payment
+
 OrderService->>RabbitMQ: Publish OrderCreated
 
 RabbitMQ->>NotificationService: Consume event
 
-OrderService-->>Client: Order created
+OrderService-->>Client: Order created + payment processed
 ```
 
 ---
@@ -236,7 +262,8 @@ OrderService-->>Client: Order created
 # ⚔️ Saga Pattern
 
 - Ensures consistency across services
-- Automatically compensates failed operations
+- Inventory reservation is compensated if any step fails
+- Payment is executed after order confirmation
 
 ---
 
@@ -265,6 +292,7 @@ All services use structured logging with Serilog.
 | /api/customers | CustomerService |
 | /api/inventory | InventoryService |
 | /api/pricing | PricingService |
+| /api/payments | PaymentService |
 
 ---
 
@@ -272,6 +300,8 @@ All services use structured logging with Serilog.
 
 - OpenTelemetry metrics
 - Distributed tracing (Jaeger)
+- Messaging-based payment processing
+- Payment providers integration (Stripe, PayPal, etc.)
 - Authentication (JWT)
 - Kubernetes deployment
 - Centralized logging (ELK)
@@ -285,6 +315,7 @@ All services use structured logging with Serilog.
 ✔ API Gateway (YARP)  
 ✔ RabbitMQ messaging  
 ✔ Saga pattern  
+✔ Payment service (HTTP integration) ✅  
 ✔ Dockerized environment  
 ✔ Health checks  
 ✔ Structured logging  
