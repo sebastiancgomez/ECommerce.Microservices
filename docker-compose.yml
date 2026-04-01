@@ -184,6 +184,33 @@
       retries: 5
       start_period: 15s 
 
+  paymentservice:
+      build:
+        context: ./services/PaymentService
+      container_name: payment-service
+      depends_on:
+        sqlserver:
+          condition: service_healthy
+        rabbitmq:
+          condition: service_healthy
+      environment:
+        ConnectionStrings__DefaultConnection: ${DB_CONNECTION_PAYMENT}
+        RabbitMQ__Host: ${RABBITMQ_HOST}
+        RabbitMQ__Port: ${RABBITMQ_PORT}
+        RabbitMQ__Username: ${RABBITMQ_USER}
+        RabbitMQ__Password: ${RABBITMQ_PASS}
+        ASPNETCORE_ENVIRONMENT: "Development"
+      ports:
+        - "5500:8080"
+      networks:
+        - ecommerce-network
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 15s
+
   apigateway:
     build:
         context: .

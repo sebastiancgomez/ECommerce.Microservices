@@ -12,7 +12,7 @@ using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .WriteTo.File("logs/orderservice-.log",
+    .WriteTo.File("logs/productservice-.log",
         rollingInterval: RollingInterval.Day,
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
     .Enrich.FromLogContext()
@@ -86,6 +86,4 @@ app.UseExceptionHandler("/error");
 
 app.MapHealthChecks("/health");
 app.UseRouting();
-/*app.UseHttpMetrics();
-app.MapMetrics();*/
 app.Run();

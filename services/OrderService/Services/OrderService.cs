@@ -15,6 +15,7 @@ public class OrderService : IOrderService
     private readonly IProductClient _productClient;
     private readonly IInventoryClient _inventoryClient;
     private readonly IPricingClient _pricingClient;
+    private readonly IPaymentClient _paymentClient;
     private readonly IEventPublisher _eventPublisher;
     private readonly ILogger<OrderService> _logger;
 
@@ -23,6 +24,7 @@ public class OrderService : IOrderService
         IProductClient productClient,
         IInventoryClient inventoryClient,
         IPricingClient pricingClient,
+        IPaymentClient paymentClient,
         IEventPublisher eventPublisher,
         ILogger<OrderService> logger)
     {
@@ -30,6 +32,7 @@ public class OrderService : IOrderService
         _productClient = productClient;
         _inventoryClient = inventoryClient;
         _pricingClient = pricingClient;
+        _paymentClient = paymentClient;
         _eventPublisher = eventPublisher;
         _logger = logger;
     }
@@ -85,6 +88,24 @@ public class OrderService : IOrderService
 
             order.ChangeStatus(OrderStatus.Confirmed);
             await _repository.AddAsync(order);
+            var paymentRequest = new CreatePaymentRequestDto
+            {
+                OrderId = order.Id,
+                Amount = order.Total,
+                Currency = "USD",
+                Method = "FAKE"
+            };
+
+            var payment = await _paymentClient.CreatePayment(paymentRequest);
+
+            if (payment.Status != "COMPLETED")
+            {
+                _logger.LogWarning("Payment failed for order {OrderId}", order.Id);
+
+                await CompensateAsync(reservedItems);
+
+                throw new InvalidOperationException("Payment failed");
+            }
 
             var orderCreatedEvent = new OrderCreatedEvent
             {

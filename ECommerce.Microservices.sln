@@ -33,16 +33,24 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "monitoring", "monitoring", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "grafana", "grafana", "{8F458C32-FE93-4959-80D5-99714872C27F}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboards", "dashboards", "{2CDCC03D-EAC3-4494-96F1-52B93DE3FC83}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "provisioning", "provisioning", "{E1A3C524-5977-472C-89DF-70A2DC2EA9CC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "datasources", "datasources", "{08338755-0826-482A-9EBD-B4D4ABB218A4}"
+	ProjectSection(SolutionItems) = preProject
+		monitoring\grafana\provisioning\datasources\datasource.yml = monitoring\grafana\provisioning\datasources\datasource.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboard", "dashboard", "{77D893BC-BAC3-45C4-8875-B7BAF60B7E8E}"
+	ProjectSection(SolutionItems) = preProject
+		monitoring\grafana\provisioning\dashboards\dashboards.yml = monitoring\grafana\provisioning\dashboards\dashboards.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboards", "dashboards", "{C74AA1B2-8A5F-424C-A052-0FFE024E63CD}"
 	ProjectSection(SolutionItems) = preProject
 		monitoring\grafana\dashboards\ecommerce-dashboard.json = monitoring\grafana\dashboards\ecommerce-dashboard.json
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "provisioning", "provisioning", "{E1A3C524-5977-472C-89DF-70A2DC2EA9CC}"
-	ProjectSection(SolutionItems) = preProject
-		monitoring\grafana\provisioning\dashboards.yml = monitoring\grafana\provisioning\dashboards.yml
-		monitoring\grafana\provisioning\datasource.yml = monitoring\grafana\provisioning\datasource.yml
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentService", "services\PaymentService\PaymentService.csproj", "{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -138,6 +146,18 @@ Global
 		{ABE66B30-BD47-A7B2-B17B-5BA67959B026}.Release|x64.Build.0 = Release|Any CPU
 		{ABE66B30-BD47-A7B2-B17B-5BA67959B026}.Release|x86.ActiveCfg = Release|Any CPU
 		{ABE66B30-BD47-A7B2-B17B-5BA67959B026}.Release|x86.Build.0 = Release|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Debug|x64.Build.0 = Debug|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Debug|x86.Build.0 = Debug|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Release|x64.ActiveCfg = Release|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Release|x64.Build.0 = Release|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Release|x86.ActiveCfg = Release|Any CPU
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -150,8 +170,11 @@ Global
 		{E883AA61-C838-4A00-B56D-A0B4C7FE0C41} = {5854FF58-B8C5-05C6-5BF2-ACE42193F22B}
 		{9D65FDEF-4411-4406-906C-50916F1768A5} = {5854FF58-B8C5-05C6-5BF2-ACE42193F22B}
 		{8F458C32-FE93-4959-80D5-99714872C27F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{2CDCC03D-EAC3-4494-96F1-52B93DE3FC83} = {8F458C32-FE93-4959-80D5-99714872C27F}
 		{E1A3C524-5977-472C-89DF-70A2DC2EA9CC} = {8F458C32-FE93-4959-80D5-99714872C27F}
+		{08338755-0826-482A-9EBD-B4D4ABB218A4} = {E1A3C524-5977-472C-89DF-70A2DC2EA9CC}
+		{77D893BC-BAC3-45C4-8875-B7BAF60B7E8E} = {E1A3C524-5977-472C-89DF-70A2DC2EA9CC}
+		{C74AA1B2-8A5F-424C-A052-0FFE024E63CD} = {8F458C32-FE93-4959-80D5-99714872C27F}
+		{F1FD0C91-9F77-CCB3-5518-F2CD51FD4BB8} = {5854FF58-B8C5-05C6-5BF2-ACE42193F22B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E7503CDC-925E-4DDB-9AF5-026E6D23A415}
