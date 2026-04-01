@@ -16,8 +16,7 @@ public class PaymentRepository : IPaymentRepository
 
     public async Task<Payment> AddAsync(Payment payment)
     {
-        _context.Payments.Add(payment);
-        await _context.SaveChangesAsync();
+        await _context.Payments.AddAsync(payment);
         return payment;
     }
 
@@ -25,5 +24,9 @@ public class PaymentRepository : IPaymentRepository
     {
         return await _context.Payments
             .FirstOrDefaultAsync(p => p.OrderId == orderId);
+    }
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
     }
 }

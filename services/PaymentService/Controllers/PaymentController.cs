@@ -16,7 +16,7 @@ public class PaymentController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreatePayment(CreatePaymentRequest request)
+    public async Task<IActionResult> CreatePayment(CreatePaymentRequestDto request)
     {
         var result = await _service.CreatePaymentAsync(request);
         return Ok(result);

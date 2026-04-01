@@ -12,8 +12,23 @@ public class PaymentDbContext : DbContext
     public DbSet<Payment> Payments => Set<Payment>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Payment>()
-            .Property(p => p.Amount)
-            .HasColumnType("decimal(18,2)"); // Ajusta precisión y escala según necesites
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.Property(p => p.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(p => p.Currency)
+                .HasMaxLength(3)
+                .IsRequired()
+                .HasDefaultValue("USD");
+
+            entity.Property(p => p.Status)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(p => p.Method)
+                .HasMaxLength(20)
+                .IsRequired();
+        });
     }
 }

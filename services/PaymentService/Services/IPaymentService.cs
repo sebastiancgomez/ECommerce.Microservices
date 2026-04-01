@@ -5,5 +5,5 @@ namespace PaymentService.Services;
 
 public interface IPaymentService
 {
-    Task<Payment> CreatePaymentAsync(CreatePaymentRequest request);
+    Task<PaymentResponseDto> CreatePaymentAsync(CreatePaymentRequestDto request);
 }

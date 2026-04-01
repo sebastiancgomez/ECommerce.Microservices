@@ -1,4 +1,5 @@
 ﻿using PaymentService.DTOs;
+using PaymentService.Mappings;
 using PaymentService.Messaging;
 using PaymentService.Models;
 using PaymentService.Repositories;
@@ -19,19 +20,23 @@ public class PaymentService : IPaymentService
         _publisher = publisher;
     }
 
-    public async Task<Payment> CreatePaymentAsync(CreatePaymentRequest request)
+    public async Task<PaymentResponseDto> CreatePaymentAsync(CreatePaymentRequestDto request)
     {
-        var payment = new Payment
+        var payment = request.ToEntity();
+
+        
+        // 🔥 Simulación de pago
+        if (request.Amount < 1000)
         {
-            OrderId = request.OrderId,
-            Amount = request.Amount,
-            Status = "Completed" // simplificado por ahora
-        };
+            payment.Status = PaymentStatus.Completed.ToString().ToUpper();
+        }
+        else
+        {
+            payment.Status = PaymentStatus.Failed.ToString().ToUpper();
+        }
+        await _repository.AddAsync(payment);
+        await _repository.SaveChangesAsync();
 
-        var created = await _repository.AddAsync(payment);
-
-        await _publisher.PublishPaymentCompletedAsync(created);
-
-        return created;
+        return payment.ToDto();
     }
 }
