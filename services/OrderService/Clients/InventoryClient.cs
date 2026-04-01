@@ -15,10 +15,10 @@ public class InventoryClient: IInventoryClient
     public async Task<bool> IsAvailable(int productId, int quantity)
     {
         var inventory = await _httpClient.GetFromJsonAsync<InventoryDto>($"api/Inventory/{productId}");
-        Console.WriteLine($"Inventory for product {productId}: {inventory?.Stock}");
+        Console.WriteLine($"Inventory for product {productId}: {inventory?.AvailableStock}");
         if (inventory is null)
             return false;
-        if(inventory.Stock < quantity)
+        if(inventory.AvailableStock < quantity)
             return false;
         return true;
     }
