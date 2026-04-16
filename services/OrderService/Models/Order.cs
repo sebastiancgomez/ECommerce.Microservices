@@ -54,6 +54,7 @@ public enum OrderStatus
 {
     Created,
     Confirmed,
+    PendingPayment,
     PaymentProcessing,
     Paid,
     Cancelled,

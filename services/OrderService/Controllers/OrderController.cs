@@ -22,7 +22,7 @@ public class OrderController : ControllerBase
         try
         {
             var order = await _orderService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetOrderById), new { id = order.Id }, order);
+            return CreatedAtAction(nameof(GetOrderById), new { id = order.OrderId }, order);
         }
         catch (TimeoutRejectedException)
         {

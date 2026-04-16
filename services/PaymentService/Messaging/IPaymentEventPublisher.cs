@@ -5,4 +5,5 @@ namespace PaymentService.Messaging;
 public interface IPaymentEventPublisher
 {
     Task PublishPaymentCompletedAsync(Payment payment);
+    Task PublishPaymentFailedAsync(Payment payment);
 }

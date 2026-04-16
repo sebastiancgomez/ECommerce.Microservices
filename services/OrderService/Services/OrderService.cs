@@ -37,7 +37,7 @@ public class OrderService : IOrderService
         _logger = logger;
     }
 
-    public async Task<OrderResponseDto> CreateAsync(CreateOrderDto dto)
+    public async Task<CreateOrderResponseDto> CreateAsync(CreateOrderDto dto)
     {
         _logger.LogInformation("Creating order for customer {CustomerId} with {ItemCount} items",
             dto.CustomerId, dto.Items.Count);
@@ -86,26 +86,11 @@ public class OrderService : IOrderService
                 order.AddItem(itemDto.ProductId, product.Name, pricingInfo.FinalPrice, itemDto.Quantity);
             }
 
-            order.ChangeStatus(OrderStatus.Confirmed);
+            order.ChangeStatus(OrderStatus.PendingPayment);
             await _repository.AddAsync(order);
-            var paymentRequest = new CreatePaymentRequestDto
-            {
-                OrderId = order.Id,
-                Amount = order.Total,
-                Currency = "USD",
-                Method = "FAKE"
-            };
 
-            var payment = await _paymentClient.CreatePayment(paymentRequest);
-
-            if (payment.Status != "COMPLETED")
-            {
-                _logger.LogWarning("Payment failed for order {OrderId}", order.Id);
-
-                await CompensateAsync(reservedItems);
-
-                throw new InvalidOperationException("Payment failed");
-            }
+            _logger.LogInformation("Order {OrderId} created in Pending state for customer {CustomerId}",
+           order.Id, order.CustomerId);
 
             var orderCreatedEvent = new OrderCreatedEvent
             {
@@ -124,7 +109,22 @@ public class OrderService : IOrderService
             _logger.LogInformation("Order {OrderId} created successfully for customer {CustomerId} with total {Total}",
                 order.Id, order.CustomerId, order.Total);
 
-            return ToDto(order);
+            return new CreateOrderResponseDto
+            {
+                OrderId = order.Id,
+                CustomerId = order.CustomerId,
+                Total = order.Total,
+                Status = order.Status.ToString(),
+                CreatedAt = order.CreatedAt,
+                PaymentUrl = $"/checkout?orderId={order.Id}", // la UI redirige aquí
+                Items = order.Items.Select(i => new OrderItemDto
+                {
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    UnitPrice = i.UnitPrice,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
         }
         catch (TimeoutRejectedException ex)
         {

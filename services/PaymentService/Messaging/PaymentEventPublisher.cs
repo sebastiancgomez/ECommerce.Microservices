@@ -1,46 +1,79 @@
 ﻿using System.Text;
 using System.Text.Json;
 using PaymentService.Models;
-using PaymentService.Messaging;
 using RabbitMQ.Client;
 
-public class PaymentEventPublisher : IPaymentEventPublisher
-{
-    private readonly IConfiguration _configuration;
+namespace PaymentService.Messaging;
 
-    public PaymentEventPublisher(IConfiguration configuration)
+public class PaymentEventPublisher : IPaymentEventPublisher, IDisposable
+{
+    private readonly IConnection _connection;
+    private readonly IModel _channel;
+    private readonly ILogger<PaymentEventPublisher> _logger;
+
+    private const string CompletedQueue = "payment.completed";
+    private const string FailedQueue = "payment.failed";
+
+    public PaymentEventPublisher(IConfiguration config, ILogger<PaymentEventPublisher> logger)
     {
-        _configuration = configuration;
+        _logger = logger;
+
+        var factory = new ConnectionFactory
+        {
+            HostName = config["RabbitMQ:Host"] ?? "localhost",
+            Port = int.Parse(config["RabbitMQ:Port"] ?? "5672"),
+            UserName = config["RabbitMQ:Username"] ?? "guest",
+            Password = config["RabbitMQ:Password"] ?? "guest"
+        };
+
+        _connection = factory.CreateConnection();
+        _channel = _connection.CreateModel();
+
+        // Declarar ambas colas al iniciar
+        DeclareQueue(CompletedQueue);
+        DeclareQueue(FailedQueue);
     }
 
     public Task PublishPaymentCompletedAsync(Payment payment)
     {
-        var factory = new ConnectionFactory()
-        {
-            HostName = _configuration["RabbitMQ:Host"],
-            Port = int.Parse(_configuration["RabbitMQ:Port"]!),
-            UserName = _configuration["RabbitMQ:Username"],
-            Password = _configuration["RabbitMQ:Password"]
-        };
-
-        using var connection = factory.CreateConnection();
-        using var channel = connection.CreateModel();
-
-        channel.QueueDeclare(
-            queue: "payment-completed",
-            durable: false,
-            exclusive: false,
-            autoDelete: false);
-
-        var message = JsonSerializer.Serialize(payment);
-        var body = Encoding.UTF8.GetBytes(message);
-
-        channel.BasicPublish(
-            exchange: "",
-            routingKey: "payment-completed",
-            basicProperties: null,
-            body: body);
-
+        Publish(payment, CompletedQueue);
+        _logger.LogInformation("[RabbitMQ] Published PaymentCompleted for OrderId={OrderId}", payment.OrderId);
         return Task.CompletedTask;
+    }
+
+    public Task PublishPaymentFailedAsync(Payment payment)
+    {
+        Publish(payment, FailedQueue);
+        _logger.LogWarning("[RabbitMQ] Published PaymentFailed for OrderId={OrderId}", payment.OrderId);
+        return Task.CompletedTask;
+    }
+
+    private void Publish(Payment payment, string queue)
+    {
+        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payment));
+        var props = _channel.CreateBasicProperties();
+        props.Persistent = true;
+
+        _channel.BasicPublish(
+            exchange: "",
+            routingKey: queue,
+            basicProperties: props,
+            body: body);
+    }
+
+    private void DeclareQueue(string name)
+    {
+        _channel.QueueDeclare(
+            queue: name,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null);
+    }
+
+    public void Dispose()
+    {
+        _channel?.Close();
+        _connection?.Close();
     }
 }

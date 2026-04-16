@@ -8,8 +8,8 @@ using NotificationService.Services;
 using NotificationService.Validators;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using Prometheus;
 using Serilog;
+using NotificationService.Messaging;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
@@ -34,6 +34,8 @@ builder.Services.AddHostedService<OrderCreatedConsumer>();
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<SendNotificationValidator>();
+builder.Services.AddHostedService<PaymentCompletedConsumer>();
+builder.Services.AddHostedService<PaymentFailedConsumer>();
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<NotificationDbContext>();
 builder.Services.AddEndpointsApiExplorer();

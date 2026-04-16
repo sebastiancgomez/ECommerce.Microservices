@@ -9,6 +9,7 @@ public class Payment
     public string Status { get; set; } = PaymentStatus.Pending.ToString(); // Pending, Completed, Failed
     public string Method { get; set; } = "FAKE";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public string ResultCode { get; set; } = string.Empty;
 }
 public enum CurrencyType
 {

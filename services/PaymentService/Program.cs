@@ -1,13 +1,14 @@
 
-using Microsoft.EntityFrameworkCore;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Serilog;
+using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
 using PaymentService.Messaging;
+using PaymentService.Providers;
 using PaymentService.Repositories;
 using PaymentService.Services;
 using PaymentService.Validator;
+using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
@@ -31,9 +32,12 @@ builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddSingleton<IPaymentEventPublisher, PaymentEventPublisher>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentProvider, FakePaymentProvider>();
 builder.Services.AddScoped<IPaymentService, PaymentService.Services.PaymentService>();
-builder.Services.AddScoped<IPaymentEventPublisher, PaymentEventPublisher>();
+
+
 builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePaymentRequestValidator>();
